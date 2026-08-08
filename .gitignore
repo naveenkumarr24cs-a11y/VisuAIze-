@@ -1,0 +1,24 @@
+# Environment and API keys
+.env
+.env.local
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.env
+
+# Output videos and temporary render directories
+output/
+temp/
+uploads/
+*.mp4
+*.wav
+*.mp3
+*.m4a
+
+# IDE / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VisuAIze</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+</head>
+<body>
+
+<!-- ══════════════════ SIDEBAR ══════════════════ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-top">
+    <div class="logo">
+      <div class="logo-icon">▶</div>
+      <span class="logo-name">Visu<b>AI</b>ze</span>
+    </div>
+    <button class="new-btn" id="newBtn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New Generation
+    </button>
+  </div>
+
+
+  <!-- Recent videos -->
+  <div class="sidebar-section" style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
+    <div class="sidebar-label">Recent Videos</div>
+    <div class="recent-list" id="recentList">
+      <div class="recent-empty">No videos yet</div>
+    </div>
+  </div>
+</aside>
+
+<!-- ══════════════════ MAIN ══════════════════ -->
+<main class="main" id="main">
+
+  <!-- Mobile header -->
+  <div class="mobile-header">
+    <button class="menu-btn" id="menuBtn">☰</button>
+    <span class="logo-name">Visu<b>AI</b>ze</span>
+  </div>
+
+  <!-- ── HOME / FORM VIEW ── -->
+  <div class="view" id="homeView">
+    <div class="home-center">
+      <div class="greeting">
+        <div class="greeting-icon">✦</div>
+        <h1 class="greeting-text">What do you want to learn?</h1>
+        <p class="greeting-sub">Describe a question or topic and I'll create a narrated step-by-step instructional video for you.</p>
+      </div>
+
+      <!-- Capability chips -->
+      <div class="chips">
+        <button class="chip" data-text="How do I change a flat tyre?">🔧 Fix a flat tyre</button>
+        <button class="chip" data-text="Explain photosynthesis step by step">🌿 Photosynthesis</button>
+        <button class="chip" data-text="How to make scrambled eggs?">🍳 Scrambled eggs</button>
+        <button class="chip" data-text="How to fix a leaking tap at home?">🚿 Fix a leaking tap</button>
+        <button class="chip" data-text="How does the human heart work?">❤️ Human heart</button>
+        <button class="chip" data-text="How to tie a tie knot?">👔 Tie a tie</button>
+      </div>
+    </div>
+
+    <!-- Input bar -->
+    <div class="input-bar-wrap">
+      <div class="input-bar" id="inputBar">
+        <form id="generateForm" enctype="multipart/form-data">
+          <input type="hidden" name="provider" id="providerInput" value="groq"/>
+
+          <!-- Image preview (shown when file selected) -->
+          <div class="attached-img-wrap" id="attachedImgWrap" style="display:none">
+            <img id="attachedImg" src="" alt="attached"/>
+            <button type="button" class="remove-attach" id="removeAttach">✕</button>
+          </div>
+
+          <div class="input-row">
+            <textarea
+              id="questionInput"
+              name="question"
+              class="question-input"
+              placeholder="How do I change a flat tyre?"
+              rows="1"
+              required
+            ></textarea>
+            <div class="input-actions">
+              
+              <!-- Claude style model dropdown -->
+              <div class="model-selector-wrap" id="modelSelectorWrap">
+                <button type="button" class="model-selector-btn" id="modelSelectorBtn">
+                  <span id="currentModelName">Groq</span>
+                  <span class="model-badge">Fast</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                
+                <div class="model-dropdown" id="modelDropdown">
+                  <div class="model-option active" data-provider="groq">
+                    <div class="model-opt-info">
+                      <div class="model-opt-name">Groq <span class="model-opt-badge">Fast</span></div>
+                      <div class="model-opt-desc">Llama 3.3 for quickest generation</div>
+                    </div>
+                    <span class="model-opt-check" id="check-groq">✓</span>
+                  </div>
+                  
+                  <div class="model-option" data-provider="gemini">
+                    <div class="model-opt-info">
+                      <div class="model-opt-name">Gemini <span class="model-opt-badge pro">Pro</span></div>
+                      <div class="model-opt-desc">2.5 Flash for balanced quality</div>
+                    </div>
+                    <span class="model-opt-check" id="check-gemini"></span>
+                  </div>
+                  
+                  <div class="model-option" data-provider="huggingface">
+                    <div class="model-opt-info">
+                      <div class="model-opt-name">HuggingFace <span class="model-opt-badge">Free</span></div>
+                      <div class="model-opt-desc">Llama 3.1 open source access</div>
+                    </div>
+                    <span class="model-opt-check" id="check-huggingface"></span>
+                  </div>
+                  
+                  <div class="model-option" data-provider="ollama">
+                    <div class="model-opt-info">
+                      <div class="model-opt-name">Ollama <span class="model-opt-badge local">Local</span></div>
+                      <div class="model-opt-desc">100% offline generation</div>
+                    </div>
+                    <span class="model-opt-check" id="check-ollama"></span>
+                  </div>
+                </div>
+              </div>
+
+              <label class="attach-btn" title="Attach image">
+                <input type="file" id="fileInput" name="image" accept="image/*" hidden/>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              </label>
+              <button type="submit" class="send-btn" id="sendBtn" disabled>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="input-hint">VisuAIze generates AI images · voice narration · MP4 video. Free to use.</div>
+    </div>
+  </div>
+
+  <!-- ── PROGRESS VIEW ── -->
+  <div class="view" id="progressView" style="display:none">
+    <div class="progress-wrap">
+      <div class="progress-topic" id="progressTopic"></div>
+
+      <div class="progress-card">
+        <div class="progress-card-header">
+          <div class="pulse-ring">
+            <div class="pulse-dot"></div>
+          </div>
+          <div>
+            <div class="progress-card-title" id="progressMsg">Generating your video...</div>
+            <div class="progress-card-sub"  id="progressSub">Please wait, this takes 2-3 minutes</div>
+          </div>
+        </div>
+
+        <div class="phases-grid">
+          <div class="phase-box" id="pb1">
+            <div class="phase-box-icon">🧠</div>
+            <div class="phase-box-label">AI Steps</div>
+            <div class="phase-box-status" id="pbs1">Pending</div>
+          </div>
+          <div class="phase-box" id="pb2">
+            <div class="phase-box-icon">🖼️</div>
+            <div class="phase-box-label">Images</div>
+            <div class="phase-box-status" id="pbs2">Pending</div>
+          </div>
+          <div class="phase-box" id="pb3">
+            <div class="phase-box-icon">🎙️</div>
+            <div class="phase-box-label">Voice</div>
+            <div class="phase-box-status" id="pbs3">Pending</div>
+          </div>
+          <div class="phase-box" id="pb4">
+            <div class="phase-box-icon">🎬</div>
+            <div class="phase-box-label">Video</div>
+            <div class="phase-box-status" id="pbs4">Pending</div>
+          </div>
+        </div>
+
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill" style="width:0%"></div>
+        </div>
+        <div class="progress-nums">
+          <span id="progressPct">0%</span>
+          <span id="progressEst">Estimated ~2-3 min</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RESULT VIEW ── -->
+  <div class="view" id="resultView" style="display:none">
+    <div class="result-wrap">
+      <div class="result-chip">✅ Video Ready</div>
+      <h2 class="result-title" id="resultTitle"></h2>
+      <div class="video-container">
+        <video id="resultVideo" controls playsinline></video>
+      </div>
+      <div class="result-info" id="resultInfo"></div>
+      <div class="result-btns">
+        <a id="dlBtn" class="btn-primary" download>⬇ Download MP4</a>
+        <button class="btn-ghost" id="anotherBtn">+ Generate Another</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ERROR VIEW ── -->
+  <div class="view" id="errorView" style="display:none">
+    <div class="error-wrap">
+      <div class="error-icon-big">⚠️</div>
+      <h3 class="error-heading">Generation Failed</h3>
+      <p class="error-body" id="errorBody"></p>
+      <button class="btn-ghost" id="retryBtn">↩ Try Again</button>
+    </div>
+  </div>
+
+</main>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>
