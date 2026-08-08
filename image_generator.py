@@ -112,8 +112,8 @@ def _alpha_rect(canvas: Image.Image, x1, y1, x2, y2, color: tuple, radius: int =
 
 
 def _fetch_image(prompt: str) -> Image.Image | None:
-    """Fetch high quality AI image from Pollinations Flux with robust endpoints."""
-    clean_p = urllib.parse.quote(f"{prompt}, 3d realistic educational illustration, highly detailed, vivid lighting, 4k render")
+    """Fetch high quality AI image from Pollinations Flux with fast 3.5s timeout."""
+    clean_p = urllib.parse.quote(f"{prompt}, 3d realistic educational illustration, highly detailed, 4k render")
     seed = random.randint(100, 99999)
     
     urls = [
@@ -123,12 +123,11 @@ def _fetch_image(prompt: str) -> Image.Image | None:
 
     for url in urls:
         try:
-            r = requests.get(url, headers=HEADERS, timeout=12)
+            r = requests.get(url, headers=HEADERS, timeout=3.5)
             if r.status_code == 200 and len(r.content) > 6000:
                 img = Image.open(BytesIO(r.content)).convert("RGBA")
                 rgb = img.convert("RGB")
-                rgb = ImageEnhance.Contrast(rgb).enhance(1.08)
-                rgb = ImageEnhance.Color(rgb).enhance(1.12)
+                rgb = ImageEnhance.Contrast(rgb).enhance(1.06)
                 return rgb.convert("RGBA")
         except Exception:
             pass

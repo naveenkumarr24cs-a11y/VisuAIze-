@@ -33,11 +33,11 @@ Each step must have exactly these fields:
 }
 
 Rules:
-- Generate between 5 and 8 steps (not more, not less)
-- Narration should be conversational and encouraging
-- Image prompts should be detailed, clear, and visually descriptive
+- Generate exactly 4 to 6 high-impact steps (concise, clear, and fast)
+- Narration should be conversational, clear, and direct (1-2 sentences per step)
+- Image prompts should be vivid and visual
 - Each step should be logically ordered
-- Duration should be 6-10 seconds per step based on narration length
+- Duration should be 4-7 seconds per step based on narration length
 - The final step should always be a completion/result step
 - Return ONLY the JSON array. No markdown. No explanation."""
 

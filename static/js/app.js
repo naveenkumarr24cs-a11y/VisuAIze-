@@ -397,7 +397,9 @@ function appendAssistantCard(jobId) {
 
         <div class="thinking-content">
           <div class="timeline-step active" id="step-1-${jobId}">
-            <div class="timeline-icon">🧠</div>
+            <div class="timeline-icon">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6v6l4 2"/></svg>
+            </div>
             <div class="timeline-text-wrap">
               <span class="timeline-step-name">Pass 1: AI Scripting</span>
               <span class="timeline-step-detail" id="detail-1-${jobId}">Deconstructing question into structured steps...</span>
@@ -405,7 +407,9 @@ function appendAssistantCard(jobId) {
           </div>
 
           <div class="timeline-step" id="step-2-${jobId}">
-            <div class="timeline-icon">🎨</div>
+            <div class="timeline-icon">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </div>
             <div class="timeline-text-wrap">
               <span class="timeline-step-name">Pass 2: Realistic Google Flow Visuals (Parallel)</span>
               <span class="timeline-step-detail" id="detail-2-${jobId}">Generating 1080p Flux visual slides via Pollinations & Flow engine...</span>
@@ -413,7 +417,9 @@ function appendAssistantCard(jobId) {
           </div>
 
           <div class="timeline-step" id="step-3-${jobId}">
-            <div class="timeline-icon">🎙️</div>
+            <div class="timeline-icon">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            </div>
             <div class="timeline-text-wrap">
               <span class="timeline-step-name">Pass 3: Studio Voiceover (Synchronized)</span>
               <span class="timeline-step-detail" id="detail-3-${jobId}">Recording human audio narrations for each step...</span>
@@ -421,7 +427,9 @@ function appendAssistantCard(jobId) {
           </div>
 
           <div class="timeline-step" id="step-4-${jobId}">
-            <div class="timeline-icon">🎬</div>
+            <div class="timeline-icon">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+            </div>
             <div class="timeline-text-wrap">
               <span class="timeline-step-name">Pass 4: Fast Video Assembly</span>
               <span class="timeline-step-detail" id="detail-4-${jobId}">Compositing Ken Burns animations & rendering 1080p MP4...</span>
