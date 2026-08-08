@@ -63,34 +63,30 @@ def _make_intro_card(topic: str) -> np.ndarray:
     img = Image.new("RGBA", (W, H), (*BG_DARK, 255))
     d   = ImageDraw.Draw(img)
 
-    # Clean ambient glow
-    for r in range(240, 0, -30):
-        d.ellipse([W//2 - r, H//2 - 60 - r, W//2 + r, H//2 - 60 + r], outline=(*INDIGO, 25), width=2)
-
     # Main Logo (Scribble Head / Tangled Thoughts in pure white)
     logo_path = Path("static/img/main_logo.png")
     if logo_path.exists():
         try:
             logo = Image.open(logo_path).convert("RGBA")
-            logo = logo.resize((70, 70), Image.LANCZOS)
-            img.paste(logo, (W//2 - 35, H//2 - 160), logo)
+            logo = logo.resize((84, 84), Image.LANCZOS)
+            img.paste(logo, (W//2 - 42, H//2 - 170), logo)
         except Exception:
             pass
 
     # Brand Title
-    d.text((W//2, H//2 - 76), "VisuAIze", fill=WHITE, font=_font(22, bold=True), anchor="mm")
+    d.text((W//2, H//2 - 70), "VisuAIze", fill=WHITE, font=_font(26, bold=True), anchor="mm")
 
-    # Main Title
-    tf    = _font(36, bold=True)
-    lines = _wrap(topic, tf, W - 200, d)
-    ty    = H // 2 - 30
+    # Main Topic Title (Clean, bold, centered - absolutely NO blue circles)
+    tf    = _font(38, bold=True)
+    lines = _wrap(topic, tf, W - 240, d)
+    ty    = H // 2 - 15
     for line in lines[:2]:
         bb = d.textbbox((0, 0), line, font=tf)
         tx = (W - (bb[2] - bb[0])) // 2
         d.text((tx, ty), line, fill=WHITE, font=tf)
-        ty += 46
+        ty += 50
 
-    d.text((W//2, ty + 20), "Step-by-Step AI Visual Solution", fill=MUTED, font=_font(16), anchor="mm")
+    d.text((W//2, ty + 24), "Step-by-Step AI Visual Solution", fill=MUTED, font=_font(17), anchor="mm")
     return np.array(img.convert("RGB"))
 
 
