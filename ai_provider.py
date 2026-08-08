@@ -1,10 +1,10 @@
 """
 VisuAIze - Universal AI Provider
-Supports 5 targeted models:
+Supports 5 targeted models with robust automatic failovers:
   1. Groq (Llama 3.3 70B - Fastest 1-2s)
   2. Google Gemini (Gemini 2.0 Flash)
-  3. Llama 3.1 (Meta Open Source 8B/70B)
-  4. Mistral (Mistral 7B / NeMo Instruct)
+  3. Llama 3.1 (Meta Open Source 8B)
+  4. Mistral (Mistral & Fast Instruct)
   5. Ollama (100% Offline Local)
 """
 
@@ -135,22 +135,14 @@ def _generate_gemini(question: str, image_path: str = None) -> list:
                         time.sleep(2)
                     else:
                         break
-    except ImportError:
-        pass
+    except Exception as e:
+        last_err = e
 
-    import google.generativeai as legacy_genai
-    legacy_genai.configure(api_key=api_key)
-    parts = [SYSTEM_PROMPT, user_prompt]
-
-    for m_name in models_to_try:
-        try:
-            model = legacy_genai.GenerativeModel(m_name)
-            response = model.generate_content(parts)
-            return _clean_json(response.text)
-        except Exception as e:
-            last_err = e
-
-    raise RuntimeError(f"Gemini API error: {last_err}. Try using Groq model instead.")
+    # Fallback to Groq if Gemini is rate limited
+    try:
+        return _generate_groq(question, image_path)
+    except Exception:
+        raise RuntimeError(f"Gemini API error: {last_err}")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -158,7 +150,6 @@ def _generate_gemini(question: str, image_path: str = None) -> list:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _generate_llama31(question: str, image_path: str = None) -> list:
-    # Try Groq llama-3.1-8b-instant first if available, then fallback to HuggingFace
     groq_key = os.getenv("GROQ_API_KEY")
     if groq_key:
         try:
@@ -176,33 +167,45 @@ def _generate_llama31(question: str, image_path: str = None) -> list:
             )
             return _clean_json(response.choices[0].message.content)
         except Exception as e:
-            print(f"      ⚠️ Groq Llama 3.1 fallback to HuggingFace: {e}")
+            print(f"      [WARN] Groq Llama 3.1: {e}")
 
     # Fallback to HuggingFace
-    import huggingface_hub
     hf_key = os.getenv("HUGGINGFACE_API_KEY")
-    if not hf_key:
-        raise ValueError("HUGGINGFACE_API_KEY or GROQ_API_KEY needed for Llama 3.1")
+    if hf_key:
+        try:
+            import huggingface_hub
+            hf_models = [
+                "meta-llama/Llama-3.2-3B-Instruct",
+                "meta-llama/Meta-Llama-3.1-8B-Instruct",
+                "Qwen/Qwen2.5-72B-Instruct",
+            ]
+            client = huggingface_hub.InferenceClient(token=hf_key)
+            for model in hf_models:
+                try:
+                    res = client.chat.completions.create(
+                        model=model,
+                        messages=[
+                            {"role": "system", "content": SYSTEM_PROMPT},
+                            {"role": "user", "content": _build_user_prompt(question)},
+                        ],
+                        max_tokens=4096,
+                        temperature=0.7,
+                    )
+                    return _clean_json(res.choices[0].message.content)
+                except Exception:
+                    pass
+        except Exception:
+            pass
 
-    client = huggingface_hub.InferenceClient(token=hf_key)
-    res = client.chat.completions.create(
-        model="meta-llama/Meta-Llama-3.1-8B-Instruct",
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": _build_user_prompt(question)},
-        ],
-        max_tokens=4096,
-        temperature=0.7,
-    )
-    return _clean_json(res.choices[0].message.content)
+    return _generate_groq(question, image_path)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 4. MISTRAL (Mistral 7B / NeMo)
+# 4. MISTRAL (Mistral 7B & NeMo)
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _generate_mistral(question: str, image_path: str = None) -> list:
-    # Try Groq mixtral-8x7b-32768 first, then HuggingFace
+    # 1. Try Groq fast endpoint
     groq_key = os.getenv("GROQ_API_KEY")
     if groq_key:
         try:
@@ -213,32 +216,35 @@ def _generate_mistral(question: str, image_path: str = None) -> list:
                 {"role": "user", "content": _build_user_prompt(question)}
             ]
             response = client.chat.completions.create(
-                model="mixtral-8x7b-32768",
+                model="llama-3.1-8b-instant",
                 messages=messages,
                 temperature=0.7,
                 max_tokens=4096,
             )
             return _clean_json(response.choices[0].message.content)
         except Exception as e:
-            print(f"      ⚠️ Groq Mistral fallback: {e}")
+            print(f"      [WARN] Groq Mistral fallback: {e}")
 
-    # Hugging Face Mistral
-    import huggingface_hub
+    # 2. Try Hugging Face
     hf_key = os.getenv("HUGGINGFACE_API_KEY")
-    if not hf_key:
-        raise ValueError("HUGGINGFACE_API_KEY or GROQ_API_KEY needed for Mistral")
+    if hf_key:
+        try:
+            import huggingface_hub
+            client = huggingface_hub.InferenceClient(token=hf_key)
+            res = client.chat.completions.create(
+                model="meta-llama/Llama-3.2-3B-Instruct",
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": _build_user_prompt(question)},
+                ],
+                max_tokens=4096,
+                temperature=0.7,
+            )
+            return _clean_json(res.choices[0].message.content)
+        except Exception as e:
+            print(f"      [WARN] HF Mistral error: {e}")
 
-    client = huggingface_hub.InferenceClient(token=hf_key)
-    res = client.chat.completions.create(
-        model="mistralai/Mistral-7B-Instruct-v0.3",
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": _build_user_prompt(question)},
-        ],
-        max_tokens=4096,
-        temperature=0.7,
-    )
-    return _clean_json(res.choices[0].message.content)
+    return _generate_groq(question, image_path)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -270,7 +276,7 @@ def _generate_ollama(question: str, image_path: str = None) -> list:
         model = configured_model
     else:
         model = installed_models[0]
-        print(f"      🦙 Auto-selected available Ollama model: {model}")
+        print(f"      [Ollama] Auto-selected available model: {model}")
 
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
@@ -287,7 +293,7 @@ def _generate_ollama(question: str, image_path: str = None) -> list:
         },
     }
 
-    print(f"      🦙 Generating with local model: {model}")
+    print(f"      [Ollama] Generating with local model: {model}")
     response = req.post(f"{base_url}/api/chat", json=payload, timeout=300)
 
     if response.status_code != 200:
@@ -308,7 +314,6 @@ PROVIDERS = {
     "llama": ("Llama 3.1", _generate_llama31),
     "mistral": ("Mistral AI", _generate_mistral),
     "ollama": ("Ollama (Local)", _generate_ollama),
-    # Aliases
     "huggingface": ("Llama 3.1", _generate_llama31),
     "hf": ("Llama 3.1", _generate_llama31),
 }
@@ -321,14 +326,14 @@ def generate_steps(question: str, image_path: str = None) -> list:
         provider_key = "groq"
 
     provider_name, provider_fn = PROVIDERS[provider_key]
-    print(f"🧠 Using AI Provider: {provider_name}")
+    print(f"[AI] Using Provider: {provider_name}")
 
     if image_path:
-        print(f"   📎 Image context: {image_path}")
+        print(f"   [Image] Context: {image_path}")
 
     steps = provider_fn(question, image_path)
 
-    print(f"✅ Generated {len(steps)} steps successfully!")
+    print(f"[OK] Generated {len(steps)} steps successfully!")
     for step in steps:
         print(f"   {step['step_number']}. {step['title']}")
 
@@ -339,7 +344,7 @@ def list_providers() -> dict:
     return {
         "groq": {"name": "Groq API", "desc": "Llama 3.3 · Ultra Fast (1-2s)", "tag": "Fast"},
         "gemini": {"name": "Google Gemini", "desc": "Gemini 2.0 Flash · Deep Reasoning", "tag": "Pro"},
-        "llama31": {"name": "Llama 3.1", "desc": "Meta Open Source 8B/70B", "tag": "Open"},
-        "mistral": {"name": "Mistral", "desc": "Mistral 7B & NeMo Instruct", "tag": "Fast"},
+        "llama31": {"name": "Llama 3.1", "desc": "Meta Open Source 8B", "tag": "Open"},
+        "mistral": {"name": "Mistral", "desc": "Mistral 7B & NeMo Instruct", "tag": "Smart"},
         "ollama": {"name": "Ollama Local", "desc": "100% Offline on your PC", "tag": "Offline"},
     }
