@@ -344,7 +344,7 @@ function appendAssistantCard(jobId) {
   row.id = `assistant-row-${jobId}`;
 
   row.innerHTML = `
-    <div class="assistant-avatar">🐨</div>
+    <div class="assistant-avatar">🐒</div>
     <div class="assistant-body" id="body-${jobId}">
 
       <!-- Claude Style Collapsible Thinking Box -->
@@ -560,7 +560,7 @@ async function openChatSession(sessionId) {
     row.className = 'assistant-msg-row';
     row.id = `assistant-row-${mockJobId}`;
     row.innerHTML = `
-      <div class="assistant-avatar">🐨</div>
+      <div class="assistant-avatar">🐒</div>
       <div class="assistant-body" id="body-${mockJobId}">
         <div class="thinking-accordion collapsed" id="thinking-${mockJobId}">
           <div class="thinking-header" onclick="toggleThinking('${mockJobId}')">

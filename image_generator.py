@@ -243,11 +243,11 @@ def build_slide(step: dict, total: int, output_path: str, preloaded_img: Image.I
 
     d = ImageDraw.Draw(canvas)
 
-    # Koala Mascot Logo in top bar
+    # Monkey Mascot Logo in top bar
     logo_txt = "VisuAIze"
     logo_font = _font(15, bold=True)
     _alpha_rect(canvas, 12, 10, 110, 46, (*INDIGO, 220), radius=8)
-    d.text((20, 17), "🐨 " + logo_txt, fill=TXT_WHITE, font=logo_font)
+    d.text((20, 17), "🐒 " + logo_txt, fill=TXT_WHITE, font=logo_font)
     d.text((124, 19), "Step-by-Step Visual Learning Engine", fill=TXT_MUTED, font=_font(12))
 
     # Step pill

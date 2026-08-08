@@ -68,7 +68,7 @@ def _make_intro_card(topic: str) -> np.ndarray:
         d.ellipse([W//2 - r, H//2 - 60 - r, W//2 + r, H//2 - 60 + r], outline=(*INDIGO, 35), width=2)
 
     # Animal Mascot & Logo Badge
-    badge_txt = "🦊 VisuAIze"
+    badge_txt = "🐒 VisuAIze"
     bf        = _font(22, bold=True)
     d.rounded_rectangle([(W//2 - 100, H//2 - 130), (W//2 + 100, H//2 - 90)], radius=8, fill=(*INDIGO, 220))
     d.text((W//2 - 75, H//2 - 124), badge_txt, fill=WHITE, font=bf)
