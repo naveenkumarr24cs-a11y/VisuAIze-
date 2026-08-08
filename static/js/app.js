@@ -5,7 +5,7 @@
      • 5 Model Selector: Groq, Gemini, Llama 3.1, Mistral, Ollama
      • Interactive Video Player with 0.75x - 2.0x Speed Buttons & Duration
      • Working Share Modal & Social Links
-     • Live SSE Thinking Timeline Accordion
+     • 100% Smooth Auto-Scroll & Manual Scrolling
    ══════════════════════════════════════════════════════════════════════════════ */
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -207,7 +207,7 @@ const MODEL_MAP = {
   groq:        { label: 'Groq',        tag: 'Fast',    cls: 'fast',  full: 'Groq (Llama 3.3)' },
   gemini:      { label: 'Gemini',      tag: 'Pro',     cls: 'pro',   full: 'Google Gemini' },
   llama31:     { label: 'Llama 3.1',   tag: 'Open',    cls: 'open',  full: 'Llama 3.1' },
-  mistral:     { label: 'Mistral',     tag: 'Smart',   cls: 'fast',  full: 'Mistral 7B' },
+  mistral:     { label: 'Mistral',     tag: 'Smart',   cls: 'fast',  full: 'Mistral' },
   ollama:      { label: 'Ollama',      tag: 'Offline', cls: 'local', full: 'Ollama Local' },
 };
 
@@ -354,7 +354,7 @@ function appendAssistantCard(jobId) {
           <div class="timeline-step" id="step-2-${jobId}">
             <div class="timeline-icon">🎨</div>
             <div class="timeline-text-wrap">
-              <span class="timeline-step-name">Pass 2: Realistic Visuals</span>
+              <span class="timeline-step-name">Pass 2: Realistic Visuals (Parallel)</span>
               <span class="timeline-step-detail" id="detail-2-${jobId}">Generating 1080p Flux presentation slides via Pollinations...</span>
             </div>
           </div>
@@ -362,7 +362,7 @@ function appendAssistantCard(jobId) {
           <div class="timeline-step" id="step-3-${jobId}">
             <div class="timeline-icon">🎙️</div>
             <div class="timeline-text-wrap">
-              <span class="timeline-step-name">Pass 3: Studio Voiceover</span>
+              <span class="timeline-step-name">Pass 3: Studio Voiceover (Synchronized)</span>
               <span class="timeline-step-detail" id="detail-3-${jobId}">Recording human audio narrations for each step...</span>
             </div>
           </div>
@@ -370,7 +370,7 @@ function appendAssistantCard(jobId) {
           <div class="timeline-step" id="step-4-${jobId}">
             <div class="timeline-icon">🎬</div>
             <div class="timeline-text-wrap">
-              <span class="timeline-step-name">Pass 4: Multi-threaded Video Assembly</span>
+              <span class="timeline-step-name">Pass 4: Fast Video Assembly</span>
               <span class="timeline-step-detail" id="detail-4-${jobId}">Compositing Ken Burns animations & rendering 1080p MP4...</span>
             </div>
           </div>
@@ -432,7 +432,7 @@ function embedVideoArtifact(jobId, data) {
   chatTitle.textContent = cleanTitle;
   currentVideoData = { filename: data.filename, title: cleanTitle };
 
-  const estDuration = Math.round((data.steps || 6) * 6.5);
+  const estDuration = Math.round((data.steps || 6) * 5.5);
 
   const card = document.createElement('div');
   card.className = 'video-artifact-card';
@@ -550,6 +550,7 @@ function startProgressListener(jobId) {
         const det = $(`detail-${d.phase}-${jobId}`);
         if (det && d.detail) det.textContent = d.detail;
       }
+      scrollToBottom();
     }
 
     if (d.type === 'done') {
@@ -567,6 +568,7 @@ function startProgressListener(jobId) {
           </div>
         `;
       }
+      scrollToBottom();
     }
   };
 
@@ -654,11 +656,13 @@ async function loadRecentVideos() {
 $('refreshRecentBtn')?.addEventListener('click', loadRecentVideos);
 
 
-// ── 15. Helpers ───────────────────────────────────────────────────────────────
+// ── 15. Smooth Auto-Scroll Helper ─────────────────────────────────────────────
 function scrollToBottom() {
   setTimeout(() => {
-    chatScrollArea.scrollTop = chatScrollArea.scrollHeight;
-  }, 50);
+    if (chatScrollArea) {
+      chatScrollArea.scrollTop = chatScrollArea.scrollHeight + 1000;
+    }
+  }, 60);
 }
 
 function escapeHtml(str) {
