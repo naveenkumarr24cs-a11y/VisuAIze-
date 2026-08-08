@@ -1,7 +1,7 @@
 /* ══════════════════════════════════════════════════════════════════════════════
    VisuAIze – Claude.ai & Google Spark Inspired Design System
-   Pixel-perfect Dark UI, Conversational Timeline, Thinking Accordion,
-   Floating Input Card, and Embedded Video Artifacts
+   Animal Mascot, Interactive Video Player Controls, Speed Buttons,
+   Speech Voice Input, and Social Share System
    ══════════════════════════════════════════════════════════════════════════════ */
 
 /* ── Reset & Variables ──────────────────────────────────────────────────────── */
@@ -12,7 +12,7 @@
 }
 
 :root {
-  /* Dark Palette (Claude / Spark) */
+  /* Dark Palette */
   --bg-app:        #131316;
   --bg-sidebar:    #18181b;
   --bg-card:       #1f1f23;
@@ -43,6 +43,7 @@
   --accent-emerald:#10b981;
   --accent-amber:  #f59e0b;
   --accent-cyan:   #06b6d4;
+  --accent-red:    #ef4444;
 
   /* Dimensions & Radius */
   --sidebar-width: 260px;
@@ -72,7 +73,7 @@ html, body {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   SIDEBAR (Claude.ai Style)
+   SIDEBAR (Clean Animal Mascot & History)
    ══════════════════════════════════════════════════════════════════════════════ */
 .sidebar {
   width: var(--sidebar-width);
@@ -90,7 +91,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 16px 8px;
+  padding: 16px 16px 10px;
 }
 
 .logo-wrap {
@@ -99,21 +100,21 @@ html, body {
   gap: 10px;
 }
 
-.spark-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--accent-coral), var(--accent-violet));
+/* Animal Mascot Icon */
+.animal-mascot-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(218, 119, 86, 0.25);
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.2);
 }
 
 .logo-title {
-  font-size: 1.1rem;
+  font-size: 1.12rem;
   font-weight: 700;
   letter-spacing: -0.4px;
   color: var(--text-primary);
@@ -126,11 +127,16 @@ html, body {
 
 .close-sidebar-btn {
   display: none;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
 }
 
-/* New Chat Button */
+/* New Video Button */
 .new-chat-wrap {
-  padding: 10px 14px;
+  padding: 8px 14px;
 }
 
 .new-chat-btn {
@@ -145,7 +151,7 @@ html, body {
   color: var(--text-primary);
   font-family: inherit;
   font-size: 0.88rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -153,10 +159,10 @@ html, body {
 .new-chat-btn:hover {
   background: var(--bg-card-hover);
   border-color: var(--border-hover);
+  transform: translateY(-1px);
 }
 
 .new-chat-btn svg {
-  margin-right: 8px;
   color: var(--accent-coral);
 }
 
@@ -174,7 +180,7 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 4px 14px 12px;
+  padding: 4px 14px 10px;
 }
 
 .nav-item {
@@ -198,10 +204,6 @@ html, body {
 .nav-item.active {
   background: rgba(218, 119, 86, 0.12);
   color: var(--accent-coral);
-}
-
-.nav-item svg {
-  opacity: 0.8;
 }
 
 /* Recent Videos Section */
@@ -279,6 +281,7 @@ html, body {
   font-size: 0.82rem;
   transition: all 0.15s ease;
   overflow: hidden;
+  cursor: pointer;
 }
 
 .recent-item:hover {
@@ -299,70 +302,28 @@ html, body {
   flex: 1;
 }
 
-/* User Card Footer */
-.sidebar-footer {
+/* Sidebar System Status Footer */
+.sidebar-system-footer {
   padding: 12px 14px;
   border-top: 1px solid var(--border);
   background: var(--bg-sidebar);
 }
 
-.user-card {
+.system-status-pill {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 8px;
-  border-radius: var(--radius-sm);
-  transition: background 0.15s;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 500;
 }
 
-.user-card:hover {
-  background: var(--bg-card);
-}
-
-.user-avatar {
-  width: 32px;
-  height: 32px;
+.status-live-dot {
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 0.85rem;
-  color: white;
-  flex-shrink: 0;
-}
-
-.user-info {
-  flex: 1;
-  overflow: hidden;
-}
-
-.user-name {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.user-plan {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-}
-
-.user-action-btn {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-}
-
-.user-action-btn:hover {
-  color: var(--text-primary);
+  background: var(--accent-emerald);
+  box-shadow: 0 0 8px var(--accent-emerald);
 }
 
 
@@ -405,7 +366,7 @@ html, body {
   color: var(--text-secondary);
   cursor: pointer;
   padding: 6px;
-  border-radius: var(--radius-sm);
+  font-size: 16px;
 }
 
 .chat-title-wrap {
@@ -426,11 +387,14 @@ html, body {
   font-size: 0.92rem;
   font-weight: 600;
   color: var(--text-primary);
+  max-width: 380px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chevron-down {
   color: var(--text-muted);
-  transition: transform 0.2s;
 }
 
 .top-bar-right {
@@ -489,7 +453,7 @@ html, body {
 .chat-scroll-area {
   flex: 1;
   overflow-y: auto;
-  padding: 24px 20px 180px;
+  padding: 24px 20px 190px;
   display: flex;
   justify-content: center;
   scroll-behavior: smooth;
@@ -505,30 +469,29 @@ html, body {
 
 .chat-thread {
   width: 100%;
-  max-width: 820px;
+  max-width: 840px;
   display: flex;
   flex-direction: column;
 }
 
 /* Welcome Hero */
 .welcome-hero {
-  margin: 40px auto 20px;
+  margin: 30px auto 20px;
   text-align: center;
   max-width: 680px;
 }
 
-.hero-spark {
-  width: 48px;
-  height: 48px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, var(--accent-coral), var(--accent-violet));
+.hero-mascot-wrap {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
-  color: #fff;
-  margin: 0 auto 20px;
-  box-shadow: 0 10px 30px rgba(218, 119, 86, 0.3);
+  margin: 0 auto 16px;
+  box-shadow: 0 10px 30px rgba(249, 115, 22, 0.25);
 }
 
 .hero-title {
@@ -543,7 +506,7 @@ html, body {
   font-size: 0.95rem;
   color: var(--text-secondary);
   line-height: 1.6;
-  margin-bottom: 32px;
+  margin-bottom: 30px;
 }
 
 /* Prompt Chips Grid */
@@ -551,7 +514,6 @@ html, body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 10px;
-  margin-top: 10px;
 }
 
 .prompt-chip {
@@ -669,7 +631,7 @@ html, body {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   CLAUDE STYLE "THINKING / COMMANDS ACCORDION"
+   THINKING / PIPELINE PROGRESS ACCORDION
    ══════════════════════════════════════════════════════════════════════════════ */
 .thinking-accordion {
   background: var(--bg-card);
@@ -821,10 +783,7 @@ html, body {
   color: var(--text-secondary);
 }
 
-.timeline-step.active .timeline-step-name {
-  color: var(--text-primary);
-}
-
+.timeline-step.active .timeline-step-name,
 .timeline-step.done .timeline-step-name {
   color: var(--text-primary);
 }
@@ -834,7 +793,6 @@ html, body {
   color: var(--text-muted);
 }
 
-/* Progress bar inside accordion */
 .thinking-progress-track {
   height: 4px;
   background: rgba(255, 255, 255, 0.06);
@@ -853,14 +811,14 @@ html, body {
 
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   VIDEO ARTIFACT CARD (Embedded Player)
+   VIDEO ARTIFACT CARD & INTERACTIVE CONTROLS
    ══════════════════════════════════════════════════════════════════════════════ */
 .video-artifact-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
   animation: fadeIn 0.4s ease;
 }
 
@@ -876,6 +834,8 @@ html, body {
   padding: 12px 18px;
   background: rgba(255, 255, 255, 0.02);
   border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .artifact-title-wrap {
@@ -886,7 +846,7 @@ html, body {
 
 .artifact-badge {
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 700;
   padding: 3px 8px;
   border-radius: 20px;
   background: rgba(16, 185, 129, 0.15);
@@ -900,7 +860,23 @@ html, body {
   color: var(--text-primary);
 }
 
-/* Video Player Wrapper */
+.artifact-meta-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.meta-pill {
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 3px 8px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+/* Video Screen */
 .player-screen {
   background: #000;
   position: relative;
@@ -918,12 +894,63 @@ html, body {
   object-fit: contain;
 }
 
+/* Video Control Strip with Speed Buttons */
+.video-control-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  background: #18181b;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.speed-control-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.speed-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-right: 4px;
+}
+
+.speed-btn {
+  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.speed-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.speed-btn.active {
+  background: var(--accent-coral);
+  border-color: var(--accent-coral);
+  color: white;
+  font-weight: 700;
+}
+
 /* Actions Toolbar below Video */
 .artifact-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
+  padding: 12px 18px;
   background: var(--bg-card);
   border-top: 1px solid var(--border);
   flex-wrap: wrap;
@@ -934,6 +961,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .btn-download-primary {
@@ -958,13 +986,13 @@ html, body {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 9px 14px;
+  padding: 8px 13px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
   font-family: inherit;
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
@@ -975,14 +1003,76 @@ html, body {
   color: var(--text-primary);
 }
 
-.artifact-meta-stats {
+/* Interactive Step Breakdown Accordion */
+.step-breakdown-wrap {
+  padding: 14px 18px;
+  background: rgba(0, 0, 0, 0.15);
+  border-top: 1px solid var(--border);
+}
+
+.step-breakdown-title {
   font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.step-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.step-accordion-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.step-accordion-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--border-hover);
+}
+
+.step-acc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.step-acc-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.step-acc-badge {
+  font-size: 0.68rem;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: rgba(218, 119, 86, 0.2);
+  color: var(--accent-coral);
+  font-weight: 700;
+}
+
+.step-acc-narration {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
 }
 
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   CLAUDE FLOATING INPUT CARD
+   CLAUDE FLOATING INPUT CARD & SPEECH ANIMATION
    ══════════════════════════════════════════════════════════════════════════════ */
 .input-bar-container {
   position: absolute;
@@ -1000,7 +1090,7 @@ html, body {
 
 .floating-input-card {
   width: 100%;
-  max-width: 820px;
+  max-width: 840px;
   background: var(--bg-input);
   border: 1px solid var(--border-hover);
   border-radius: var(--radius-xl);
@@ -1015,7 +1105,7 @@ html, body {
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--border-focus);
 }
 
-/* Attached Thumbnail Inside Card */
+/* Attached Preview Strip */
 .attached-preview-wrap {
   padding-bottom: 10px;
 }
@@ -1028,7 +1118,6 @@ html, body {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  position: relative;
 }
 
 .attached-preview-card img {
@@ -1073,7 +1162,7 @@ html, body {
   margin-left: 6px;
 }
 
-/* Textarea Row */
+/* Textarea */
 .input-textarea-row {
   margin-bottom: 8px;
 }
@@ -1096,7 +1185,7 @@ html, body {
   color: var(--text-muted);
 }
 
-/* Bottom Toolbar Inside Card */
+/* Toolbar */
 .input-toolbar-row {
   display: flex;
   align-items: center;
@@ -1121,6 +1210,7 @@ html, body {
   justify-content: center;
   cursor: pointer;
   transition: all 0.15s;
+  position: relative;
 }
 
 .toolbar-btn:hover {
@@ -1128,7 +1218,26 @@ html, body {
   color: var(--text-primary);
 }
 
-/* Claude Style Model Picker Dropdown */
+/* Mic Speech Pulse Animation */
+.mic-btn.listening {
+  color: var(--accent-red);
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.mic-btn.listening .recording-pulse {
+  position: absolute;
+  inset: -2px;
+  border-radius: 8px;
+  border: 2px solid var(--accent-red);
+  animation: micPulse 1.2s infinite;
+}
+
+@keyframes micPulse {
+  0% { transform: scale(0.95); opacity: 1; }
+  100% { transform: scale(1.3); opacity: 0; }
+}
+
+/* Model Dropdown Container */
 .model-dropdown-container {
   position: relative;
 }
@@ -1158,12 +1267,12 @@ html, body {
   font-size: 0.65rem;
   padding: 2px 6px;
   border-radius: 10px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .model-badge-tag.fast  { background: rgba(218, 119, 86, 0.2); color: var(--accent-coral); }
 .model-badge-tag.pro   { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; }
-.model-badge-tag.free  { background: rgba(16, 185, 129, 0.2); color: var(--accent-emerald); }
+.model-badge-tag.open  { background: rgba(16, 185, 129, 0.2); color: var(--accent-emerald); }
 .model-badge-tag.local { background: rgba(6, 182, 212, 0.2); color: var(--accent-cyan); }
 
 .dropdown-chevron {
@@ -1175,12 +1284,12 @@ html, body {
   transform: rotate(180deg);
 }
 
-/* Popover Menu */
+/* Model Popover (5 Models) */
 .model-popover {
   position: absolute;
   bottom: calc(100% + 12px);
   left: 0;
-  width: 300px;
+  width: 320px;
   background: #222226;
   border: 1px solid var(--border-hover);
   border-radius: var(--radius-md);
@@ -1204,9 +1313,10 @@ html, body {
 
 .popover-header {
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
+  letter-spacing: 0.05em;
   padding: 6px 10px 4px;
 }
 
@@ -1247,10 +1357,11 @@ html, body {
   font-size: 0.65rem;
   padding: 1px 5px;
   border-radius: 8px;
+  font-weight: 700;
 }
 .opt-tag.fast  { background: rgba(218, 119, 86, 0.25); color: var(--accent-coral); }
 .opt-tag.pro   { background: rgba(99, 102, 241, 0.25); color: #a5b4fc; }
-.opt-tag.free  { background: rgba(16, 185, 129, 0.25); color: var(--accent-emerald); }
+.opt-tag.open  { background: rgba(16, 185, 129, 0.25); color: var(--accent-emerald); }
 .opt-tag.local { background: rgba(6, 182, 212, 0.25); color: var(--accent-cyan); }
 
 .model-opt-desc {
@@ -1268,7 +1379,7 @@ html, body {
   opacity: 1;
 }
 
-/* Claude Send Button (Orange Arrow) */
+/* Send Action Button */
 .send-action-btn {
   width: 34px;
   height: 34px;
@@ -1295,7 +1406,6 @@ html, body {
   transform: none;
 }
 
-/* Disclaimer Footer */
 .input-footer-note {
   font-size: 0.72rem;
   color: var(--text-dim);
@@ -1303,6 +1413,119 @@ html, body {
   margin-top: 8px;
   pointer-events: auto;
 }
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   SHARE MODAL
+   ══════════════════════════════════════════════════════════════════════════════ */
+.share-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.share-modal-card {
+  width: 90%;
+  max-width: 440px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  animation: popoverFade 0.2s ease;
+}
+
+.share-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.share-modal-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.share-close-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.share-modal-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.share-link-input-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.share-link-input-row input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  outline: none;
+}
+
+.btn-copy-link {
+  padding: 8px 16px;
+  background: var(--accent-coral);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+
+.btn-copy-link:hover {
+  background: var(--accent-coral-h);
+}
+
+.share-social-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.social-share-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+
+.social-share-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+
 
 /* ── Animation helper ───────────────────────────────────────────────────────── */
 @keyframes spin {
@@ -1329,9 +1552,6 @@ html, body {
     display: flex;
   }
   .chat-scroll-area {
-    padding: 16px 12px 180px;
-  }
-  .floating-input-card {
-    border-radius: var(--radius-lg);
+    padding: 16px 12px 190px;
   }
 }

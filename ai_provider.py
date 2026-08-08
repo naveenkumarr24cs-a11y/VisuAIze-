@@ -1,12 +1,11 @@
 """
 VisuAIze - Universal AI Provider
-Supports multiple AI backends:
-  - Google Gemini (default)
-  - Groq API (Llama 3, Mixtral - very fast)
-  - Hugging Face Inference API (1000s of models)
-  - Ollama (100% local, no internet, free)
-
-Switch providers by changing AI_PROVIDER in your .env file.
+Supports 5 targeted models:
+  1. Groq (Llama 3.3 70B - Fastest 1-2s)
+  2. Google Gemini (Gemini 2.0 Flash)
+  3. Llama 3.1 (Meta Open Source 8B/70B)
+  4. Mistral (Mistral 7B / NeMo Instruct)
+  5. Ollama (100% Offline Local)
 """
 
 import json
@@ -54,10 +53,8 @@ Return ONLY the JSON array. No markdown fences. No explanation text."""
 def _clean_json(raw: str) -> list:
     """Strip markdown fences and parse JSON."""
     text = raw.strip()
-    # Remove ```json ... ``` or ``` ... ```
     text = re.sub(r"^```(?:json)?\s*", "", text)
     text = re.sub(r"\s*```$", "", text)
-    # Find first [ and last ]
     start = text.find("[")
     end = text.rfind("]")
     if start != -1 and end != -1:
@@ -66,7 +63,48 @@ def _clean_json(raw: str) -> list:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# PROVIDER: GOOGLE GEMINI
+# 1. GROQ API (Llama 3.3 70B - Ultra Fast)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _generate_groq(question: str, image_path: str = None) -> list:
+    from groq import Groq
+
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise ValueError("GROQ_API_KEY not set in .env — get one free at https://console.groq.com")
+
+    model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    client = Groq(api_key=api_key)
+
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+
+    if image_path and Path(image_path).exists():
+        vision_model = os.getenv("GROQ_VISION_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")
+        with open(image_path, "rb") as f:
+            image_b64 = base64.b64encode(f.read()).decode("utf-8")
+        ext = Path(image_path).suffix.lower().replace(".", "")
+        messages.append({
+            "role": "user",
+            "content": [
+                {"type": "image_url", "image_url": {"url": f"data:image/{ext};base64,{image_b64}"}},
+                {"type": "text", "text": _build_user_prompt(question)},
+            ],
+        })
+        model = vision_model
+    else:
+        messages.append({"role": "user", "content": _build_user_prompt(question)})
+
+    response = client.chat.completions.create(
+        model=model,
+        messages=messages,
+        temperature=0.7,
+        max_tokens=4096,
+    )
+    return _clean_json(response.choices[0].message.content)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 2. GOOGLE GEMINI (Gemini 2.0 Flash)
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _generate_gemini(question: str, image_path: str = None) -> list:
@@ -76,11 +114,9 @@ def _generate_gemini(question: str, image_path: str = None) -> list:
         raise ValueError("GEMINI_API_KEY not set in .env")
 
     user_prompt = _build_user_prompt(question)
-    models_to_try = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-3.6-flash", "gemini-1.5-flash"]
-    
+    models_to_try = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash"]
     last_err = None
 
-    # Try official new google.genai SDK first
     try:
         from google import genai
         client = genai.Client(api_key=api_key)
@@ -96,126 +132,117 @@ def _generate_gemini(question: str, image_path: str = None) -> list:
                 except Exception as e:
                     last_err = e
                     if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                        print(f"      ⚠️  Gemini {m_name} rate limited. Waiting 2s...")
                         time.sleep(2)
                     else:
-                        print(f"      ⚠️  Gemini {m_name} error: {e}")
                         break
     except ImportError:
         pass
 
-    # Fallback to legacy google.generativeai SDK
     import google.generativeai as legacy_genai
     legacy_genai.configure(api_key=api_key)
     parts = [SYSTEM_PROMPT, user_prompt]
 
     for m_name in models_to_try:
-        for attempt in range(2):
-            try:
-                model = legacy_genai.GenerativeModel(m_name)
-                response = model.generate_content(parts)
-                return _clean_json(response.text)
-            except Exception as e:
-                last_err = e
-                if "429" in str(e):
-                    time.sleep(2)
-                else:
-                    break
+        try:
+            model = legacy_genai.GenerativeModel(m_name)
+            response = model.generate_content(parts)
+            return _clean_json(response.text)
+        except Exception as e:
+            last_err = e
 
     raise RuntimeError(f"Gemini API error: {last_err}. Try using Groq model instead.")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# PROVIDER: GROQ API
+# 3. LLAMA 3.1 (Meta Open Source)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _generate_groq(question: str, image_path: str = None) -> list:
-    from groq import Groq
-
-    api_key = os.getenv("GROQ_API_KEY")
-    if not api_key:
-        raise ValueError("GROQ_API_KEY not set in .env — get one free at https://console.groq.com")
-
-    model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
-    client = Groq(api_key=api_key)
-
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-    ]
-
-    # Groq supports vision with llava models
-    if image_path and Path(image_path).exists():
-        vision_model = os.getenv("GROQ_VISION_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")
-        with open(image_path, "rb") as f:
-            image_b64 = base64.b64encode(f.read()).decode("utf-8")
-        ext = Path(image_path).suffix.lower().replace(".", "")
-        messages.append({
-            "role": "user",
-            "content": [
-                {"type": "image_url", "image_url": {"url": f"data:image/{ext};base64,{image_b64}"}},
-                {"type": "text", "text": _build_user_prompt(question)},
-            ],
-        })
-        # Use vision model when image is provided
-        model = vision_model
-    else:
-        messages.append({"role": "user", "content": _build_user_prompt(question)})
-
-    response = client.chat.completions.create(
-        model=model,
-        messages=messages,
-        temperature=0.7,
-        max_tokens=4096,
-    )
-    return _clean_json(response.choices[0].message.content)
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# PROVIDER: HUGGING FACE INFERENCE API
-# ─────────────────────────────────────────────────────────────────────────────
-
-def _generate_huggingface(question: str, image_path: str = None) -> list:
-    import huggingface_hub
-
-    api_key = os.getenv("HUGGINGFACE_API_KEY")
-    if not api_key:
-        raise ValueError("HUGGINGFACE_API_KEY not set in .env — get one free at https://huggingface.co/settings/tokens")
-
-    models_to_try = [
-        "meta-llama/Llama-3.2-3B-Instruct",
-        "meta-llama/Meta-Llama-3.1-8B-Instruct",
-        "mistralai/Mistral-7B-Instruct-v0.3",
-        "Qwen/Qwen2.5-72B-Instruct",
-    ]
-
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": _build_user_prompt(question)},
-    ]
-
-    client = huggingface_hub.InferenceClient(token=api_key)
-    last_err = None
-
-    for model in models_to_try:
+def _generate_llama31(question: str, image_path: str = None) -> list:
+    # Try Groq llama-3.1-8b-instant first if available, then fallback to HuggingFace
+    groq_key = os.getenv("GROQ_API_KEY")
+    if groq_key:
         try:
-            print(f"      🤗 Trying HuggingFace model: {model}")
-            res = client.chat.completions.create(
-                model=model,
+            from groq import Groq
+            client = Groq(api_key=groq_key)
+            messages = [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": _build_user_prompt(question)}
+            ]
+            response = client.chat.completions.create(
+                model="llama-3.1-8b-instant",
                 messages=messages,
-                max_tokens=4096,
                 temperature=0.7,
+                max_tokens=4096,
             )
-            content = res.choices[0].message.content
-            return _clean_json(content)
+            return _clean_json(response.choices[0].message.content)
         except Exception as e:
-            last_err = e
-            print(f"      ⚠️  HF model {model} failed: {e}. Trying fallback model...")
+            print(f"      ⚠️ Groq Llama 3.1 fallback to HuggingFace: {e}")
 
-    raise RuntimeError(f"HuggingFace error: {last_err}")
+    # Fallback to HuggingFace
+    import huggingface_hub
+    hf_key = os.getenv("HUGGINGFACE_API_KEY")
+    if not hf_key:
+        raise ValueError("HUGGINGFACE_API_KEY or GROQ_API_KEY needed for Llama 3.1")
+
+    client = huggingface_hub.InferenceClient(token=hf_key)
+    res = client.chat.completions.create(
+        model="meta-llama/Meta-Llama-3.1-8B-Instruct",
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": _build_user_prompt(question)},
+        ],
+        max_tokens=4096,
+        temperature=0.7,
+    )
+    return _clean_json(res.choices[0].message.content)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# PROVIDER: OLLAMA (local, 100% offline, free)
+# 4. MISTRAL (Mistral 7B / NeMo)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _generate_mistral(question: str, image_path: str = None) -> list:
+    # Try Groq mixtral-8x7b-32768 first, then HuggingFace
+    groq_key = os.getenv("GROQ_API_KEY")
+    if groq_key:
+        try:
+            from groq import Groq
+            client = Groq(api_key=groq_key)
+            messages = [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": _build_user_prompt(question)}
+            ]
+            response = client.chat.completions.create(
+                model="mixtral-8x7b-32768",
+                messages=messages,
+                temperature=0.7,
+                max_tokens=4096,
+            )
+            return _clean_json(response.choices[0].message.content)
+        except Exception as e:
+            print(f"      ⚠️ Groq Mistral fallback: {e}")
+
+    # Hugging Face Mistral
+    import huggingface_hub
+    hf_key = os.getenv("HUGGINGFACE_API_KEY")
+    if not hf_key:
+        raise ValueError("HUGGINGFACE_API_KEY or GROQ_API_KEY needed for Mistral")
+
+    client = huggingface_hub.InferenceClient(token=hf_key)
+    res = client.chat.completions.create(
+        model="mistralai/Mistral-7B-Instruct-v0.3",
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": _build_user_prompt(question)},
+        ],
+        max_tokens=4096,
+        temperature=0.7,
+    )
+    return _clean_json(res.choices[0].message.content)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 5. OLLAMA (100% Local, Offline, Free)
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _generate_ollama(question: str, image_path: str = None) -> list:
@@ -224,7 +251,6 @@ def _generate_ollama(question: str, image_path: str = None) -> list:
     base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     configured_model = os.getenv("OLLAMA_MODEL", "llama3.2")
 
-    # 1. Verify Ollama is running and check downloaded models
     try:
         health = req.get(f"{base_url}/api/tags", timeout=5)
         if health.status_code != 200:
@@ -232,18 +258,14 @@ def _generate_ollama(question: str, image_path: str = None) -> list:
         installed_models = [m["name"] for m in health.json().get("models", [])]
     except Exception:
         raise RuntimeError(
-            f"Ollama is not running. Please launch the Ollama app on your computer or start it in terminal."
+            "Ollama is not running. Please launch the Ollama app on your computer or run 'ollama run llama3.2' in terminal."
         )
 
     if not installed_models:
         raise RuntimeError(
-            "No models installed in Ollama yet.\n"
-            "To use Ollama for free, open PowerShell and run:\n"
-            "   ollama run llama3.2\n"
-            "(Once downloaded, refresh this page and click generate!)"
+            "No models installed in Ollama yet. Open PowerShell and run: ollama run llama3.2"
         )
 
-    # 2. Pick configured model or the first available model
     if configured_model in installed_models or any(configured_model in m for m in installed_models):
         model = configured_model
     else:
@@ -266,11 +288,7 @@ def _generate_ollama(question: str, image_path: str = None) -> list:
     }
 
     print(f"      🦙 Generating with local model: {model}")
-    response = req.post(
-        f"{base_url}/api/chat",
-        json=payload,
-        timeout=300,
-    )
+    response = req.post(f"{base_url}/api/chat", json=payload, timeout=300)
 
     if response.status_code != 200:
         raise RuntimeError(f"Ollama error {response.status_code}: {response.text[:300]}")
@@ -280,33 +298,27 @@ def _generate_ollama(question: str, image_path: str = None) -> list:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# MAIN DISPATCHER
+# DISPATCHER
 # ─────────────────────────────────────────────────────────────────────────────
 
 PROVIDERS = {
+    "groq": ("Groq API (Llama 3.3)", _generate_groq),
     "gemini": ("Google Gemini", _generate_gemini),
-    "groq": ("Groq API", _generate_groq),
-    "huggingface": ("Hugging Face", _generate_huggingface),
-    "hf": ("Hugging Face", _generate_huggingface),  # alias
+    "llama31": ("Llama 3.1", _generate_llama31),
+    "llama": ("Llama 3.1", _generate_llama31),
+    "mistral": ("Mistral AI", _generate_mistral),
     "ollama": ("Ollama (Local)", _generate_ollama),
+    # Aliases
+    "huggingface": ("Llama 3.1", _generate_llama31),
+    "hf": ("Llama 3.1", _generate_llama31),
 }
 
 
 def generate_steps(question: str, image_path: str = None) -> list:
-    """
-    Generate step-by-step instructions using the configured AI provider.
-
-    Provider is set via AI_PROVIDER in .env:
-      AI_PROVIDER=gemini       → Google Gemini (default)
-      AI_PROVIDER=groq         → Groq API (fastest)
-      AI_PROVIDER=huggingface  → Hugging Face Inference API
-      AI_PROVIDER=ollama       → Local Ollama (offline)
-    """
-    provider_key = os.getenv("AI_PROVIDER", "gemini").lower().strip()
+    provider_key = os.getenv("AI_PROVIDER", "groq").lower().strip()
 
     if provider_key not in PROVIDERS:
-        valid = ", ".join(PROVIDERS.keys())
-        raise ValueError(f"Unknown AI_PROVIDER '{provider_key}'. Valid options: {valid}")
+        provider_key = "groq"
 
     provider_name, provider_fn = PROVIDERS[provider_key]
     print(f"🧠 Using AI Provider: {provider_name}")
@@ -324,59 +336,10 @@ def generate_steps(question: str, image_path: str = None) -> list:
 
 
 def list_providers() -> dict:
-    """Returns info about all available providers."""
     return {
-        "gemini": {
-            "name": "Google Gemini",
-            "models": ["gemini-1.5-flash", "gemini-1.5-pro"],
-            "env_key": "GEMINI_API_KEY",
-            "free_tier": True,
-            "local": False,
-            "vision": True,
-            "get_key": "https://aistudio.google.com/app/apikey",
-        },
-        "groq": {
-            "name": "Groq API",
-            "models": ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768", "gemma2-9b-it"],
-            "env_key": "GROQ_API_KEY",
-            "free_tier": True,
-            "local": False,
-            "vision": True,
-            "get_key": "https://console.groq.com",
-        },
-        "huggingface": {
-            "name": "Hugging Face Inference API",
-            "models": ["meta-llama/Meta-Llama-3.1-8B-Instruct", "mistralai/Mistral-7B-Instruct-v0.3",
-                       "microsoft/Phi-3-mini-4k-instruct", "Qwen/Qwen2.5-72B-Instruct"],
-            "env_key": "HUGGINGFACE_API_KEY",
-            "free_tier": True,
-            "local": False,
-            "vision": True,
-            "get_key": "https://huggingface.co/settings/tokens",
-        },
-        "ollama": {
-            "name": "Ollama (Local)",
-            "models": ["llama3.2", "llama3.1", "mistral", "phi3", "gemma2", "qwen2.5"],
-            "env_key": None,
-            "free_tier": True,
-            "local": True,
-            "vision": True,
-            "get_key": "https://ollama.com/download",
-        },
+        "groq": {"name": "Groq API", "desc": "Llama 3.3 · Ultra Fast (1-2s)", "tag": "Fast"},
+        "gemini": {"name": "Google Gemini", "desc": "Gemini 2.0 Flash · Deep Reasoning", "tag": "Pro"},
+        "llama31": {"name": "Llama 3.1", "desc": "Meta Open Source 8B/70B", "tag": "Open"},
+        "mistral": {"name": "Mistral", "desc": "Mistral 7B & NeMo Instruct", "tag": "Fast"},
+        "ollama": {"name": "Ollama Local", "desc": "100% Offline on your PC", "tag": "Offline"},
     }
-
-
-if __name__ == "__main__":
-    from dotenv import load_dotenv
-    load_dotenv()
-
-    print("=" * 60)
-    print("VisuAIze — AI Provider Test")
-    print("=" * 60)
-
-    provider = os.getenv("AI_PROVIDER", "gemini")
-    print(f"Current provider: {provider}")
-
-    steps = generate_steps("How do I make a cup of tea?")
-    print(f"\nFirst step: {steps[0]['title']}")
-    print(f"Narration preview: {steps[0]['narration'][:100]}...")

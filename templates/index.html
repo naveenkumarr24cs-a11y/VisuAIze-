@@ -3,50 +3,55 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>VisuAIze – AI Video Generator</title>
+  <title>VisuAIze – AI Step-by-Step Video Generator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="/static/css/style.css?v=3"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/css/style.css?v=4"/>
 </head>
 <body>
 
 <div class="app-container">
 
-  <!-- ══════════════════════════ SIDEBAR (Claude Style) ══════════════════════════ -->
+  <!-- ══════════════════════════ SIDEBAR (Clean & Animal Mascot) ══════════════════════════ -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <div class="logo-wrap">
-        <div class="spark-icon">✦</div>
+        <!-- Iconic Cyber Fox Mascot Logo -->
+        <div class="animal-mascot-icon">
+          <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
+            <path d="M16 2L5 8L8 22L16 30L24 22L27 8L16 2Z" fill="url(#mascotGrad)"/>
+            <path d="M16 8L10 14L16 20L22 14L16 8Z" fill="#131316"/>
+            <circle cx="13" cy="14" r="1.5" fill="#f43f5e"/>
+            <circle cx="19" cy="14" r="1.5" fill="#06b6d4"/>
+            <defs>
+              <linearGradient id="mascotGrad" x1="5" y1="2" x2="27" y2="30" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#f97316"/>
+                <stop offset="0.5" stop-color="#da7756"/>
+                <stop offset="1" stop-color="#8b5cf6"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
         <span class="logo-title">Visu<b>AI</b>ze</span>
       </div>
-      <button class="icon-btn close-sidebar-btn" id="closeSidebarBtn" title="Close sidebar">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-      </button>
+      <button class="icon-btn close-sidebar-btn" id="closeSidebarBtn" title="Close sidebar">✕</button>
     </div>
 
-    <!-- New Chat Button -->
+    <!-- New Video Button -->
     <div class="new-chat-wrap">
       <button class="new-chat-btn" id="newChatBtn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         <span>New Video</span>
         <kbd class="shortcut-kbd">⌘K</kbd>
       </button>
     </div>
 
-    <!-- Navigation Links -->
+    <!-- Navigation Link -->
     <div class="nav-links">
       <a href="#" class="nav-item active" id="navChats">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        <span>Chats</span>
-      </a>
-      <a href="#" class="nav-item" id="navProjects">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-        <span>Projects</span>
-      </a>
-      <a href="#" class="nav-item" id="navArtifacts">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-        <span>Artifacts</span>
+        <span>All Videos</span>
       </a>
     </div>
 
@@ -63,17 +68,11 @@
       </div>
     </div>
 
-    <!-- User Profile Footer -->
-    <div class="sidebar-footer">
-      <div class="user-card">
-        <div class="user-avatar">N</div>
-        <div class="user-info">
-          <div class="user-name">Naveen</div>
-          <div class="user-plan">Free plan · Local</div>
-        </div>
-        <button class="user-action-btn" title="Settings">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
-        </button>
+    <!-- Sleek System Status Footer -->
+    <div class="sidebar-system-footer">
+      <div class="system-status-pill">
+        <span class="status-live-dot"></span>
+        <span>VisuAIze Engine Active</span>
       </div>
     </div>
   </aside>
@@ -84,9 +83,7 @@
     <!-- Top App Bar -->
     <header class="top-bar">
       <div class="top-bar-left">
-        <button class="mobile-menu-btn" id="mobileMenuBtn" title="Open menu">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-        </button>
+        <button class="mobile-menu-btn" id="mobileMenuBtn" title="Open menu">☰</button>
         <div class="chat-title-wrap" id="chatTitleWrap">
           <span class="chat-title" id="chatTitle">New Video Generation</span>
           <svg class="chevron-down" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
@@ -96,9 +93,9 @@
       <div class="top-bar-right">
         <div class="top-model-badge" id="topModelBadge">
           <span class="pulse-dot-small"></span>
-          <span id="topModelName">Groq Llama 3.3</span>
+          <span id="topModelName">Groq (Llama 3.3)</span>
         </div>
-        <button class="top-action-btn" id="shareBtn">
+        <button class="top-action-btn" id="shareBtn" title="Share current video">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
           <span>Share</span>
         </button>
@@ -109,13 +106,27 @@
     <div class="chat-scroll-area" id="chatScrollArea">
       <div class="chat-thread" id="chatThread">
 
-        <!-- Welcome Hero (shown when no messages yet) -->
+        <!-- Welcome Hero (Animal Mascot) -->
         <div class="welcome-hero" id="welcomeHero">
-          <div class="hero-spark">✦</div>
+          <div class="hero-mascot-wrap">
+            <svg width="56" height="56" viewBox="0 0 32 32" fill="none">
+              <path d="M16 2L5 8L8 22L16 30L24 22L27 8L16 2Z" fill="url(#heroMascotGrad)"/>
+              <path d="M16 8L10 14L16 20L22 14L16 8Z" fill="#131316"/>
+              <circle cx="13" cy="14" r="1.5" fill="#f43f5e"/>
+              <circle cx="19" cy="14" r="1.5" fill="#06b6d4"/>
+              <defs>
+                <linearGradient id="heroMascotGrad" x1="5" y1="2" x2="27" y2="30" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#f97316"/>
+                  <stop offset="0.5" stop-color="#da7756"/>
+                  <stop offset="1" stop-color="#8b5cf6"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
           <h1 class="hero-title">What do you want to learn?</h1>
-          <p class="hero-subtitle">Enter any question or topic. VisuAIze will generate structured AI script steps, realistic Flux visual slides, studio voiceover narration, and composite a step-by-step video.</p>
+          <p class="hero-subtitle">Type your question or use the 🎙️ voice input button. VisuAIze will generate visual slides, record studio audio, and produce a step-by-step video tutorial in seconds.</p>
 
-          <!-- Suggestion Chips (Claude / Spark style) -->
+          <!-- Suggestion Chips Grid -->
           <div class="prompt-chips-grid">
             <button class="prompt-chip" data-prompt="How do I change a flat tyre on a car?">
               <span class="chip-icon">🔧</span>
@@ -198,7 +209,7 @@
             ></textarea>
           </div>
 
-          <!-- Bottom Control Toolbar (Inside Card) -->
+          <!-- Bottom Control Toolbar -->
           <div class="input-toolbar-row">
             <div class="toolbar-left">
 
@@ -208,7 +219,7 @@
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
               </label>
 
-              <!-- Claude Style Model Dropdown -->
+              <!-- Claude Style Model Dropdown (5 Models: Groq, Gemini, Llama 3.1, Mistral, Ollama) -->
               <div class="model-dropdown-container" id="modelDropdownContainer">
                 <button type="button" class="model-select-btn" id="modelSelectBtn">
                   <span class="model-name-text" id="selectedModelLabel">Groq</span>
@@ -220,46 +231,62 @@
                 <div class="model-popover" id="modelPopover">
                   <div class="popover-header">Choose AI Model</div>
 
+                  <!-- 1. Groq -->
                   <div class="model-option-item active" data-provider="groq">
                     <div class="model-opt-main">
                       <div class="model-opt-title">
-                        <span>Groq API</span>
+                        <span>Groq (Llama 3.3)</span>
                         <span class="opt-tag fast">Fastest</span>
                       </div>
-                      <div class="model-opt-desc">Llama 3.3 70B · Instant script generation (1-2s)</div>
+                      <div class="model-opt-desc">Llama 3.3 70B · Ultra fast 1-2s script writing</div>
                     </div>
                     <span class="check-icon" id="check-groq">✓</span>
                   </div>
 
+                  <!-- 2. Google Gemini -->
                   <div class="model-option-item" data-provider="gemini">
                     <div class="model-opt-main">
                       <div class="model-opt-title">
                         <span>Google Gemini</span>
                         <span class="opt-tag pro">Pro</span>
                       </div>
-                      <div class="model-opt-desc">Gemini 2.0 Flash · Deep reasoning & rich visual details</div>
+                      <div class="model-opt-desc">Gemini 2.0 Flash · Deep reasoning & rich visuals</div>
                     </div>
                     <span class="check-icon" id="check-gemini"></span>
                   </div>
 
-                  <div class="model-option-item" data-provider="huggingface">
+                  <!-- 3. Llama 3.1 -->
+                  <div class="model-option-item" data-provider="llama31">
                     <div class="model-opt-main">
                       <div class="model-opt-title">
-                        <span>Hugging Face</span>
-                        <span class="opt-tag free">Free</span>
+                        <span>Llama 3.1</span>
+                        <span class="opt-tag open">Open</span>
                       </div>
-                      <div class="model-opt-desc">Llama 3.1 & Mistral · Serverless inference access</div>
+                      <div class="model-opt-desc">Meta Open Source 8B / 70B Instruct</div>
                     </div>
-                    <span class="check-icon" id="check-huggingface"></span>
+                    <span class="check-icon" id="check-llama31"></span>
                   </div>
 
+                  <!-- 4. Mistral -->
+                  <div class="model-option-item" data-provider="mistral">
+                    <div class="model-opt-main">
+                      <div class="model-opt-title">
+                        <span>Mistral</span>
+                        <span class="opt-tag fast">Smart</span>
+                      </div>
+                      <div class="model-opt-desc">Mistral 7B & NeMo Instruct</div>
+                    </div>
+                    <span class="check-icon" id="check-mistral"></span>
+                  </div>
+
+                  <!-- 5. Ollama -->
                   <div class="model-option-item" data-provider="ollama">
                     <div class="model-opt-main">
                       <div class="model-opt-title">
                         <span>Ollama Local</span>
                         <span class="opt-tag local">Offline</span>
                       </div>
-                      <div class="model-opt-desc">100% private offline AI on your local computer</div>
+                      <div class="model-opt-desc">100% private offline AI on your PC</div>
                     </div>
                     <span class="check-icon" id="check-ollama"></span>
                   </div>
@@ -270,11 +297,11 @@
 
             <!-- Toolbar Right (Mic + Send Button) -->
             <div class="toolbar-right">
-              <button type="button" class="toolbar-btn mic-btn" id="micBtn" title="Voice Input">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+              <button type="button" class="toolbar-btn mic-btn" id="micBtn" title="Click to speak (Voice Input)">
+                <svg class="mic-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                <span class="recording-pulse" id="recordingPulse"></span>
               </button>
 
-              <!-- Claude Style Arrow Send Button -->
               <button type="submit" class="send-action-btn" id="sendActionBtn" disabled title="Send prompt">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
               </button>
@@ -283,7 +310,7 @@
         </form>
       </div>
 
-      <!-- Claude Style Footer Disclaimer -->
+      <!-- Disclaimer Note -->
       <div class="input-footer-note">
         VisuAIze generates step-by-step video tutorials with AI voice and visual slides.
       </div>
@@ -293,6 +320,36 @@
 
 </div>
 
-<script src="/static/js/app.js?v=3"></script>
+<!-- ══════════════════════════ SHARE MODAL ══════════════════════════ -->
+<div class="share-modal-backdrop" id="shareModalBackdrop" style="display:none">
+  <div class="share-modal-card">
+    <div class="share-modal-header">
+      <div class="share-modal-title">Share Video Tutorial</div>
+      <button class="share-close-btn" id="closeShareModalBtn">✕</button>
+    </div>
+    <div class="share-modal-body">
+      <p class="share-modal-desc">Share this step-by-step AI video with friends or social networks:</p>
+      
+      <div class="share-link-input-row">
+        <input type="text" id="shareLinkInput" readonly value="http://127.0.0.1:5000"/>
+        <button class="btn-copy-link" id="copyShareLinkBtn">Copy</button>
+      </div>
+
+      <div class="share-social-grid">
+        <a href="#" class="social-share-btn whatsapp" id="shareWhatsapp" target="_blank">
+          <span>💬 WhatsApp</span>
+        </a>
+        <a href="#" class="social-share-btn twitter" id="shareTwitter" target="_blank">
+          <span>𝕏 Twitter</span>
+        </a>
+        <a href="#" class="social-share-btn telegram" id="shareTelegram" target="_blank">
+          <span>✈ Telegram</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/app.js?v=4"></script>
 </body>
 </html>
