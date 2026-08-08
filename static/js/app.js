@@ -49,13 +49,15 @@ const modelBadge        = document.querySelector('.model-selector-btn .model-bad
 // Toggle dropdown
 modelSelectorBtn.addEventListener('click', (e) => {
   e.stopPropagation();
-  modelDropdown.classList.toggle('show');
+  const isOpen = modelDropdown.classList.toggle('show');
+  modelSelectorWrap.classList.toggle('open', isOpen);
 });
 
 // Close when clicking outside
 document.addEventListener('click', (e) => {
   if (!modelSelectorWrap.contains(e.target)) {
     modelDropdown.classList.remove('show');
+    modelSelectorWrap.classList.remove('open');
   }
 });
 
@@ -83,13 +85,18 @@ modelDropdown.querySelectorAll('.model-option').forEach(item => {
     const badgeEl = item.querySelector('.model-opt-badge');
     if (badgeEl) {
       modelBadge.textContent = badgeEl.textContent;
-      modelBadge.className = 'model-badge ' + (badgeEl.classList.contains('pro') ? 'pro' : 
-                                              badgeEl.classList.contains('local') ? 'local' : '');
+      modelBadge.className = 'model-badge';
+      if (badgeEl.classList.contains('pro'))   modelBadge.classList.add('pro');
+      if (badgeEl.classList.contains('local')) modelBadge.classList.add('local');
     }
 
     modelDropdown.classList.remove('show');
+    modelSelectorWrap.classList.remove('open');
   });
 });
+
+// Initialize default selection checkmark
+$('check-groq').textContent = '✓';
 
 
 // ── Suggestion chips ───────────────────────────────────────────────────────

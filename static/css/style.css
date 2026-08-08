@@ -85,23 +85,33 @@ body {
   align-items: center;
 }
 .model-selector-btn {
-  background: transparent;
-  border: none;
+  background: var(--surface-2);
+  border: 1px solid var(--border-h);
   color: var(--text-2);
   font-family: inherit;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  border-radius: 6px;
+  border-radius: 20px;
   transition: all 0.2s;
 }
 .model-selector-btn:hover {
   background: var(--surface-2);
+  border-color: rgba(88,101,242,0.4);
   color: var(--text);
+}
+.model-selector-btn svg {
+  transition: transform 0.2s;
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+.model-dropdown.show ~ * .model-selector-btn svg,
+.model-selector-wrap.open .model-selector-btn svg {
+  transform: rotate(180deg);
 }
 .model-badge {
   font-size: 0.7rem;
@@ -120,20 +130,21 @@ body {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 8px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-  display: none;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+  display: flex;
   flex-direction: column;
   gap: 2px;
-  z-index: 100;
+  z-index: 200;
   transform: translateY(10px);
   opacity: 0;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  visibility: hidden;
+  transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.18s;
   pointer-events: none;
 }
 .model-dropdown.show {
-  display: flex;
   transform: translateY(0);
   opacity: 1;
+  visibility: visible;
   pointer-events: auto;
 }
 .model-option {
@@ -167,6 +178,10 @@ body {
 .model-opt-badge.pro {
   background: rgba(88, 101, 242, 0.2);
   color: #a7b2ff;
+}
+.model-opt-badge.local {
+  background: rgba(52, 211, 153, 0.15);
+  color: #34d399;
 }
 .model-opt-check { color: var(--primary-h); font-weight: 600; opacity: 0; }
 .model-option.active .model-opt-check { opacity: 1; }
