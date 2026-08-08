@@ -120,6 +120,32 @@ html, body {
   background: rgba(255, 255, 255, 0.05);
   box-shadow: 0 4px 14px rgba(249, 115, 22, 0.2);
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.mascot-svg-img {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+.hero-mascot-wrap {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  box-shadow: 0 10px 30px rgba(249, 115, 22, 0.2);
+}
+
+.hero-mascot-img {
+  width: 52px;
+  height: 52px;
+  display: block;
 }
 
 .logo-title {
