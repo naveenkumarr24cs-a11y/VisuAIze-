@@ -237,6 +237,12 @@ shareModalBackdrop?.addEventListener('click', (e) => {
   }
 });
 
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && shareModalBackdrop && shareModalBackdrop.style.display !== 'none') {
+    shareModalBackdrop.style.display = 'none';
+  }
+});
+
 copyShareLinkBtn?.addEventListener('click', () => {
   shareLinkInput.select();
   navigator.clipboard.writeText(shareLinkInput.value).then(() => {
