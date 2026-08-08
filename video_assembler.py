@@ -60,47 +60,59 @@ def _wrap(text, font, max_w, draw):
 
 
 def _make_intro_card(topic: str) -> np.ndarray:
-    img = Image.new("RGB", (W, H), BG_DARK)
+    img = Image.new("RGBA", (W, H), (*BG_DARK, 255))
     d   = ImageDraw.Draw(img)
 
-    # Glow circle
-    for r in range(260, 0, -20):
-        d.ellipse([W//2 - r, H//2 - 60 - r, W//2 + r, H//2 - 60 + r], outline=(*INDIGO, 35), width=2)
+    # Clean ambient glow
+    for r in range(240, 0, -30):
+        d.ellipse([W//2 - r, H//2 - 60 - r, W//2 + r, H//2 - 60 + r], outline=(*INDIGO, 25), width=2)
 
-    # Animal Mascot & Logo Badge
-    badge_txt = "🐒 VisuAIze"
-    bf        = _font(22, bold=True)
-    d.rounded_rectangle([(W//2 - 100, H//2 - 130), (W//2 + 100, H//2 - 90)], radius=8, fill=(*INDIGO, 220))
-    d.text((W//2 - 75, H//2 - 124), badge_txt, fill=WHITE, font=bf)
+    # Main Logo (Scribble Head / Tangled Thoughts in pure white)
+    logo_path = Path("static/img/main_logo.png")
+    if logo_path.exists():
+        try:
+            logo = Image.open(logo_path).convert("RGBA")
+            logo = logo.resize((70, 70), Image.LANCZOS)
+            img.paste(logo, (W//2 - 35, H//2 - 160), logo)
+        except Exception:
+            pass
+
+    # Brand Title
+    d.text((W//2, H//2 - 76), "VisuAIze", fill=WHITE, font=_font(22, bold=True), anchor="mm")
 
     # Main Title
-    tf    = _font(38, bold=True)
+    tf    = _font(36, bold=True)
     lines = _wrap(topic, tf, W - 200, d)
-    ty    = H // 2 - 60
+    ty    = H // 2 - 30
     for line in lines[:2]:
         bb = d.textbbox((0, 0), line, font=tf)
         tx = (W - (bb[2] - bb[0])) // 2
-        d.text((tx + 2, ty + 2), line, fill=(0, 0, 0), font=tf)
         d.text((tx, ty), line, fill=WHITE, font=tf)
-        ty += 48
+        ty += 46
 
-    d.text((W//2 - 140, ty + 20), "Step-by-Step AI Visual Solution", fill=MUTED, font=_font(16))
-    return np.array(img)
+    d.text((W//2, ty + 20), "Step-by-Step AI Visual Solution", fill=MUTED, font=_font(16), anchor="mm")
+    return np.array(img.convert("RGB"))
 
 
 def _make_outro_card(topic: str, num_steps: int) -> np.ndarray:
-    img = Image.new("RGB", (W, H), (10, 14, 24))
+    img = Image.new("RGBA", (W, H), (10, 14, 24, 255))
     d   = ImageDraw.Draw(img)
 
-    cx, cy = W // 2, H // 2 - 50
-    d.ellipse([cx - 45, cy - 45, cx + 45, cy + 45], fill=(*EMERALD, 220))
-    d.line([(cx - 18, cy + 2), (cx - 5, cy + 16)], fill=WHITE, width=4)
-    d.line([(cx - 5, cy + 16), (cx + 20, cy - 14)], fill=WHITE, width=4)
+    # Workflow Logo (Meditating Figure in pure white)
+    logo_path = Path("static/img/workflow_logo.png")
+    if logo_path.exists():
+        try:
+            logo = Image.open(logo_path).convert("RGBA")
+            logo = logo.resize((80, 50), Image.LANCZOS)
+            img.paste(logo, (W//2 - 40, H//2 - 100), logo)
+        except Exception:
+            pass
 
-    d.text((W//2, cy + 70), "Complete!", fill=WHITE, font=_font(36, bold=True), anchor="mm")
-    d.text((W//2, cy + 115), f"Finished all {num_steps} steps on: {topic[:40]}", fill=MUTED, font=_font(16), anchor="mm")
-    d.text((W//2, H - 36), "🦊 VisuAIze · Fast AI Video Generator", fill=MUTED, font=_font(12), anchor="mm")
-    return np.array(img)
+    cx, cy = W // 2, H // 2 + 10
+    d.text((W//2, cy), "Tutorial Complete!", fill=WHITE, font=_font(34, bold=True), anchor="mm")
+    d.text((W//2, cy + 45), f"Finished all {num_steps} steps on: {topic[:42]}", fill=MUTED, font=_font(16), anchor="mm")
+    d.text((W//2, H - 36), "VisuAIze · Fast AI Video Generator", fill=MUTED, font=_font(12), anchor="mm")
+    return np.array(img.convert("RGB"))
 
 
 def assemble_video(
