@@ -63,6 +63,38 @@ const sidebar                = $('sidebar');
 const appContainer           = $('appContainer');
 
 
+// Theme Switcher Elements
+const themeToggleBtn = $('themeToggleBtn');
+const themeIconSun   = $('themeIconSun');
+const themeIconMoon  = $('themeIconMoon');
+const themeLabel     = $('themeLabel');
+
+function applyTheme(theme) {
+  if (theme === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    if (themeIconSun)  themeIconSun.style.display  = 'none';
+    if (themeIconMoon) themeIconMoon.style.display = 'inline-block';
+    if (themeLabel)    themeLabel.textContent      = 'Dark';
+    localStorage.setItem('visuaize-theme', 'light');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+    if (themeIconSun)  themeIconSun.style.display  = 'inline-block';
+    if (themeIconMoon) themeIconMoon.style.display = 'none';
+    if (themeLabel)    themeLabel.textContent      = 'Light';
+    localStorage.setItem('visuaize-theme', 'dark');
+  }
+}
+
+// Check saved theme or system preference
+const savedTheme = localStorage.getItem('visuaize-theme') || 'dark';
+applyTheme(savedTheme);
+
+themeToggleBtn?.addEventListener('click', () => {
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  applyTheme(isLight ? 'dark' : 'light');
+});
+
+
 // ── 1. Toggle Sidebar (Claude/ChatGPT Style) ──────────────────────────────────
 function toggleSidebar() {
   sidebar.classList.toggle('collapsed');
