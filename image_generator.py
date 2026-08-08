@@ -1,13 +1,16 @@
 """
-VisuAIze - Ultra Fast Parallel Google Flow Slide Generator
-==========================================================
+VisuAIze - Ultra Realistic Google Flow Slide Generator
+======================================================
 Features:
-  - Concurrent multi-threaded image downloads (ThreadPoolExecutor) -> 5x faster!
-  - Real AI visuals via Pollinations Flux API with quick 12s timeout
-  - Glassmorphic panels, crisp typography, animal mascot branding
+  - Multi-tier Pollinations Flux AI fetching with full User-Agent headers
+  - High-definition Google Flow visual diagramming engine for instant rich graphics
+  - Crisp split-panel presentation layout (58.5% visual illustration, 41.5% narration panel)
+  - Custom Koala Mascot branding in top bar
+  - Multi-threaded parallel processing (ThreadPoolExecutor)
 """
 
 import os
+import random
 import time
 import urllib.parse
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -21,29 +24,31 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
 W = 1280
 H = 720
 
-# ── Colors ───────────────────────────────────────────────────────────────────
-BG_DARK    = (8, 10, 20)
-BG_MID     = (14, 16, 32)
-BG_PANEL   = (16, 19, 38, 240)    # right panel (RGBA)
+# ── Color Palette ────────────────────────────────────────────────────────────
+BG_DARK    = (14, 16, 26)
+BG_MID     = (20, 24, 40)
+BG_PANEL   = (16, 19, 36, 245)
 
-INDIGO     = (99, 102, 241)        # primary indigo
-INDIGO_LT  = (129, 140, 248)       # light indigo
-VIOLET     = (139, 92, 246)        # violet accent
-AMBER      = (251, 191, 36)        # amber/gold
-EMERALD    = (52, 211, 153)        # green progress
-ROSE       = (251, 113, 133)       # rose accent
-CYAN       = (34, 211, 238)        # cyan accent
+INDIGO     = (99, 102, 241)        # Primary Indigo
+INDIGO_LT  = (129, 140, 248)       # Light Indigo
+VIOLET     = (139, 92, 246)        # Violet
+AMBER      = (251, 191, 36)        # Amber/Gold
+EMERALD    = (52, 211, 153)        # Emerald Green
+ROSE       = (251, 113, 133)       # Rose/Coral
+CYAN       = (34, 211, 238)        # Cyan
 
 TXT_WHITE  = (255, 255, 255)
-TXT_SILVER = (203, 213, 225)
+TXT_SILVER = (226, 232, 240)
 TXT_MUTED  = (148, 163, 184)
-TXT_DIM    = (71, 85, 105)
+TXT_DIM    = (100, 116, 139)
 
-# ── Pollinations API (Fast & Enhanced) ───────────────────────────────────────
-POLL_URL = "https://image.pollinations.ai/prompt/{p}?width=768&height=512&nologo=true&enhance=true"
-TIMEOUT  = 14   # Fast timeout so generation never blocks
+# ── Image Fetching Settings ──────────────────────────────────────────────────
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+}
 
-# ── Font cache ────────────────────────────────────────────────────────────────
+# ── Font Cache ───────────────────────────────────────────────────────────────
 _FONT_CACHE: dict = {}
 
 def _font(size: int, bold: bool = False) -> ImageFont.ImageFont:
@@ -107,20 +112,85 @@ def _alpha_rect(canvas: Image.Image, x1, y1, x2, y2, color: tuple, radius: int =
 
 
 def _fetch_image(prompt: str) -> Image.Image | None:
-    enhanced = f"{prompt}, high quality educational illustration, vivid colors, clean lighting, 4k resolution, no text"
-    url = POLL_URL.format(p=urllib.parse.quote(enhanced))
+    """Fetch high quality AI image from Pollinations Flux with robust endpoints."""
+    clean_p = urllib.parse.quote(f"{prompt}, 3d realistic educational illustration, highly detailed, vivid lighting, 4k render")
+    seed = random.randint(100, 99999)
+    
+    urls = [
+        f"https://image.pollinations.ai/prompt/{clean_p}?width=768&height=512&model=flux&nologo=true&seed={seed}",
+        f"https://image.pollinations.ai/prompt/{clean_p}?width=768&height=512&model=turbo&nologo=true",
+    ]
 
-    try:
-        r = requests.get(url, timeout=TIMEOUT)
-        if r.status_code == 200 and len(r.content) > 5000:
-            img = Image.open(BytesIO(r.content)).convert("RGBA")
-            img_rgb = img.convert("RGB")
-            img_rgb = ImageEnhance.Contrast(img_rgb).enhance(1.08)
-            img_rgb = ImageEnhance.Color(img_rgb).enhance(1.12)
-            return img_rgb.convert("RGBA")
-    except Exception:
-        pass
+    for url in urls:
+        try:
+            r = requests.get(url, headers=HEADERS, timeout=12)
+            if r.status_code == 200 and len(r.content) > 6000:
+                img = Image.open(BytesIO(r.content)).convert("RGBA")
+                rgb = img.convert("RGB")
+                rgb = ImageEnhance.Contrast(rgb).enhance(1.08)
+                rgb = ImageEnhance.Color(rgb).enhance(1.12)
+                return rgb.convert("RGBA")
+        except Exception:
+            pass
+
     return None
+
+
+def _draw_google_flow_diagram(canvas: Image.Image, step: dict, accent: tuple, panel_w: int, panel_h: int):
+    """Draw a beautiful, high-tech Google Flow diagram card when offline."""
+    n = step.get("step_number", 1)
+    title = step.get("title", f"Step {n}")
+    
+    diag = Image.new("RGBA", (panel_w, panel_h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(diag)
+    
+    # 1. Subtle grid lines (Google Flow canvas)
+    for gx in range(0, panel_w, 40):
+        d.line([(gx, 0), (gx, panel_h)], fill=(255, 255, 255, 8), width=1)
+    for gy in range(0, panel_h, 40):
+        d.line([(0, gy), (panel_w, gy)], fill=(255, 255, 255, 8), width=1)
+
+    # 2. Main Central Technical Flow Node
+    cx, cy = panel_w // 2, panel_h // 2
+    card_w, card_h = 440, 220
+    x1, y1 = cx - card_w // 2, cy - card_h // 2
+    x2, y2 = cx + card_w // 2, cy + card_h // 2
+    
+    # Ambient Card Glow
+    for g in range(16, 0, -4):
+        d.rounded_rectangle([(x1 - g, y1 - g), (x2 + g, y2 + g)], radius=18, outline=(*accent, 18 - g), width=2)
+    
+    # Solid Card Box
+    d.rounded_rectangle([(x1, y1), (x2, y2)], radius=14, fill=(24, 28, 48, 240), outline=(*accent, 160), width=2)
+
+    # Node Header Badge
+    d.rounded_rectangle([(x1 + 20, y1 + 18), (x1 + 130, y1 + 44)], radius=6, fill=(*accent, 50))
+    d.text((x1 + 30, y1 + 24), f"STAGE 0{n} · ACTIVE", fill=accent, font=_font(11, bold=True))
+
+    # Node Step Title
+    tf = _font(22, bold=True)
+    title_lines = _wrap(title, tf, card_w - 40, d)
+    ty = y1 + 56
+    for l in title_lines[:2]:
+        d.text((x1 + 20, ty), l, fill=TXT_WHITE, font=tf)
+        ty += 28
+
+    # Process Connectors / Schematic Nodes
+    node_y = y1 + 132
+    d.line([(x1 + 20, node_y), (x2 - 20, node_y)], fill=(*accent, 80), width=2)
+    
+    # 3 Progress Checkpoints inside card
+    for k, (lbl, col) in enumerate([("1. Input", EMERALD), ("2. Execute", accent), ("3. Verify", CYAN)]):
+        nx = x1 + 40 + k * 140
+        d.ellipse([nx - 7, node_y - 7, nx + 7, node_y + 7], fill=(*col, 240))
+        d.text((nx - 18, node_y + 12), lbl, fill=TXT_MUTED, font=_font(11))
+
+    # 3. Surrounding Flow Arrows & Connection Dots
+    for offset_x in [-180, 180]:
+        d.ellipse([cx + offset_x - 4, cy - 130 - 4, cx + offset_x + 4, cy - 130 + 4], fill=(*accent, 180))
+        d.line([(cx + offset_x, cy - 130), (cx, y1)], fill=(*accent, 40), width=1)
+
+    canvas.alpha_composite(diag, (0, 56))
 
 
 def build_slide(step: dict, total: int, output_path: str, preloaded_img: Image.Image = None) -> str:
@@ -138,10 +208,10 @@ def build_slide(step: dict, total: int, output_path: str, preloaded_img: Image.I
     IMG_X2 = int(W * 0.585)
     IMG_Y1 = 56
     IMG_Y2 = H - 36
+    panel_w = IMG_X2
+    panel_h = IMG_Y2 - IMG_Y1
 
     if ai_img:
-        panel_w = IMG_X2
-        panel_h = IMG_Y2 - IMG_Y1
         src_w, src_h = ai_img.size
         scale = max(panel_w / src_w, panel_h / src_h)
         ai_fit = ai_img.resize((int(src_w * scale), int(src_h * scale)), Image.BILINEAR)
@@ -150,7 +220,7 @@ def build_slide(step: dict, total: int, output_path: str, preloaded_img: Image.I
         ai_fit = ai_fit.crop((left, top, left + panel_w, top + panel_h))
         canvas.paste(ai_fit, (0, IMG_Y1))
 
-        # Blend right edge
+        # Blend right edge smoothly
         fade_w = 90
         fade = Image.new("RGBA", (fade_w, panel_h), (0, 0, 0, 0))
         fd = ImageDraw.Draw(fade)
@@ -159,14 +229,8 @@ def build_slide(step: dict, total: int, output_path: str, preloaded_img: Image.I
             fd.line([(x, 0), (x, panel_h)], fill=(*BG_MID, alpha))
         canvas.alpha_composite(fade, (IMG_X2 - fade_w, IMG_Y1))
     else:
-        # High aesthetic geometric graphic fallback
-        layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-        ld = ImageDraw.Draw(layer)
-        cx, cy = IMG_X2 // 2, (IMG_Y1 + IMG_Y2) // 2
-        for r in range(250, 0, -35):
-            a = int(35 * (1 - r / 250))
-            ld.ellipse([cx - r, cy - r, cx + r, cy + r], outline=(*accent, a), width=2)
-        canvas.alpha_composite(layer)
+        # Render high-detail Google Flow diagram
+        _draw_google_flow_diagram(canvas, step, accent, panel_w, panel_h)
 
     # Right info panel
     PNL_X = IMG_X2 - 10
@@ -174,16 +238,16 @@ def build_slide(step: dict, total: int, output_path: str, preloaded_img: Image.I
     _alpha_rect(canvas, PNL_X, IMG_Y1, PNL_X + 3, IMG_Y2, (*accent, 220))
 
     # Top bar
-    _alpha_rect(canvas, 0, 0, W, 56, (0, 0, 0, 210))
+    _alpha_rect(canvas, 0, 0, W, 56, (12, 14, 22, 235))
     _alpha_rect(canvas, 0, 55, W, 57, (*accent, 90))
 
     d = ImageDraw.Draw(canvas)
 
-    # Animal Logo in top bar
+    # Koala Mascot Logo in top bar
     logo_txt = "VisuAIze"
     logo_font = _font(15, bold=True)
     _alpha_rect(canvas, 12, 10, 110, 46, (*INDIGO, 220), radius=8)
-    d.text((20, 17), "🦊 " + logo_txt, fill=TXT_WHITE, font=logo_font)
+    d.text((20, 17), "🐨 " + logo_txt, fill=TXT_WHITE, font=logo_font)
     d.text((124, 19), "Step-by-Step Visual Learning Engine", fill=TXT_MUTED, font=_font(12))
 
     # Step pill
@@ -242,7 +306,7 @@ def build_slide(step: dict, total: int, output_path: str, preloaded_img: Image.I
     d.text((12, BAR_Y - 16), f"{int(pct * 100)}% · Step {n} of {total} · 1080p HD", fill=TXT_MUTED, font=_font(11))
 
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    canvas.convert("RGB").save(output_path, "PNG", quality=88)
+    canvas.convert("RGB").save(output_path, "PNG", quality=90)
     return output_path
 
 
@@ -251,7 +315,6 @@ def generate_all_images(steps: list, output_dir: str) -> list[str]:
     total = len(steps)
     print(f"\n🖼️  Generating {total} Google Flow HD slides (Parallel Engine)...")
 
-    # Parallel image download with ThreadPoolExecutor (5x faster!)
     def _download_and_build(i, step):
         n = step.get("step_number", i + 1)
         out_path = os.path.join(output_dir, f"step_{n:02d}.png")
@@ -267,5 +330,5 @@ def generate_all_images(steps: list, output_dir: str) -> list[str]:
             idx, p = f.result()
             paths[idx] = p
 
-    print(f"✅ All {total} slides generated in parallel!")
+    print(f"✅ All {total} Google Flow slides ready!")
     return paths

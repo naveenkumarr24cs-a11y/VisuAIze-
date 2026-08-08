@@ -1,7 +1,7 @@
 """
-VisuAIze - Web Application Server
-A beautiful Flask web app that provides a browser UI for generating
-step-by-step instructional videos. Opens browser automatically on launch.
+VisuAIze - Web Application Server & History Manager
+Provides browser UI for generating and browsing step-by-step instructional videos.
+Supports full session restoration (Claude/ChatGPT style chat interface).
 """
 
 import json
@@ -27,6 +27,7 @@ app.secret_key = "visualize-secret-key-2026"
 OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "output"))
 TEMP_DIR = Path(os.getenv("TEMP_DIR", "temp"))
 UPLOAD_DIR = Path("uploads")
+HISTORY_FILE = OUTPUT_DIR / "sessions.json"
 
 OUTPUT_DIR.mkdir(exist_ok=True)
 TEMP_DIR.mkdir(exist_ok=True)
@@ -37,14 +38,41 @@ _job_queues: dict[str, queue.Queue] = {}
 _job_status: dict[str, dict] = {}
 
 
-# ── Helpers ──────────────────────────────────────────────────────────────────
+# ── History Helpers ──────────────────────────────────────────────────────────
+
+def _load_history() -> list[dict]:
+    if HISTORY_FILE.exists():
+        try:
+            with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return []
+    return []
+
+
+def _save_history(sessions: list[dict]):
+    try:
+        with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+            json.dump(sessions, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"Failed to save history: {e}")
+
+
+def _add_session(session_data: dict):
+    sessions = _load_history()
+    # Prepend new session
+    sessions = [s for s in sessions if s.get("filename") != session_data.get("filename")]
+    sessions.insert(0, session_data)
+    _save_history(sessions[:50])
+
+
+# ── Pipeline Runner ──────────────────────────────────────────────────────────
 
 def _sse_event(data: dict) -> str:
     return f"data: {json.dumps(data)}\n\n"
 
 
 def _run_pipeline(job_id: str, question: str, provider: str, image_path: str | None):
-    """Runs the full VisuAIze pipeline in a background thread, pushing SSE progress."""
     q = _job_queues[job_id]
 
     def push(phase: int, total: int, message: str, detail: str = ""):
@@ -65,26 +93,26 @@ def _run_pipeline(job_id: str, question: str, provider: str, image_path: str | N
         tmp_audio.mkdir(parents=True, exist_ok=True)
         output_path = str(OUTPUT_DIR / f"{session}.mp4")
 
-        # Phase 1 – Generate steps
+        # Phase 1 – AI Scripting
         push(1, 4, f"Generating steps with {provider.title()} AI...", "Analyzing your question")
         from ai_provider import generate_steps
         steps = generate_steps(question, image_path)
-        push(1, 4, f"Got {len(steps)} steps!", ", ".join(s["title"] for s in steps[:3]) + "...")
+        push(1, 4, f"Script ready ({len(steps)} steps)!", ", ".join(s["title"] for s in steps[:3]) + "...")
 
-        # Phase 2 – Generate images
-        push(2, 4, "Building presentation slides...", f"Locally generating {len(steps)} high-quality slides")
+        # Phase 2 – Realistic Google Flow Visuals (Parallel)
+        push(2, 4, "Building Google Flow visual slides...", f"Generating {len(steps)} high-definition visual slides in parallel")
         from image_generator import generate_all_images
         image_paths = generate_all_images(steps, str(tmp_images))
-        push(2, 4, "All images ready!", f"{len(image_paths)} images generated")
+        push(2, 4, "All visual slides ready!", f"{len(image_paths)} visual slides generated")
 
-        # Phase 3 – Generate voice
-        push(3, 4, "Generating voice narrations...", f"Creating {len(steps) + 2} audio clips")
+        # Phase 3 – Voice Narrations (Synchronized)
+        push(3, 4, "Recording studio voice narrations...", f"Creating {len(steps) + 2} synchronized audio clips")
         from voice_generator import generate_all_voices
         audio_data = generate_all_voices(steps, str(tmp_audio))
-        push(3, 4, "Voice narrations done!", "All audio clips created")
+        push(3, 4, "Voice narrations synchronized!", "All audio clips created")
 
-        # Phase 4 – Assemble video
-        push(4, 4, "Assembling final video...", "Stitching images, audio & overlays with FFmpeg")
+        # Phase 4 – Video Assembly (Ultrafast)
+        push(4, 4, "Assembling 1080p video...", "Stitching visual slides, voice & Ken Burns motion")
         from video_assembler import assemble_video
         assemble_video(steps=steps, image_paths=image_paths,
                        audio_data=audio_data, output_path=output_path, topic=question)
@@ -94,10 +122,23 @@ def _run_pipeline(job_id: str, question: str, provider: str, image_path: str | N
 
         file_size = round(Path(output_path).stat().st_size / (1024 * 1024), 1)
         video_filename = Path(output_path).name
+
+        # Save session to history
+        session_record = {
+            "id": session,
+            "question": question,
+            "provider": provider,
+            "steps": steps,
+            "filename": video_filename,
+            "size_mb": file_size,
+            "created": datetime.now().strftime("%d %b %Y, %I:%M %p"),
+        }
+        _add_session(session_record)
+
         _job_status[job_id] = {"status": "done", "filename": video_filename,
-                                "size_mb": file_size, "steps": len(steps)}
+                                "size_mb": file_size, "steps": len(steps), "session": session_record}
         q.put({"type": "done", "filename": video_filename,
-               "size_mb": file_size, "steps": len(steps)})
+               "size_mb": file_size, "steps": len(steps), "session": session_record})
 
     except Exception as e:
         import traceback
@@ -146,7 +187,6 @@ def api_generate():
 
 @app.route("/api/progress/<job_id>")
 def api_progress(job_id):
-    """Server-Sent Events stream for real-time progress updates."""
     if job_id not in _job_queues:
         return jsonify({"error": "Job not found"}), 404
 
@@ -165,16 +205,65 @@ def api_progress(job_id):
                     headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
-@app.route("/api/videos")
-def api_videos():
-    videos = []
+@app.route("/api/history")
+def api_history():
+    """Returns all past chat/video sessions."""
+    saved = _load_history()
+    existing_files = {f.name for f in OUTPUT_DIR.glob("*.mp4")}
+
+    # Filter only files that still exist on disk
+    valid_sessions = [s for s in saved if s.get("filename") in existing_files]
+
+    # If some mp4 files are on disk but not in sessions.json, synthesize entries
+    recorded_files = {s["filename"] for s in valid_sessions}
     for f in sorted(OUTPUT_DIR.glob("*.mp4"), key=lambda x: x.stat().st_mtime, reverse=True):
-        videos.append({
+        if f.name not in recorded_files:
+            clean_q = f.name.replace(".mp4", "").replace("_", " ")
+            clean_q = clean_q[16:] if len(clean_q) > 16 else clean_q
+            entry = {
+                "id": f.stem,
+                "question": clean_q,
+                "provider": "groq",
+                "steps": [],
+                "filename": f.name,
+                "size_mb": round(f.stat().st_size / (1024 * 1024), 1),
+                "created": datetime.fromtimestamp(f.stat().st_mtime).strftime("%d %b %Y, %I:%M %p"),
+            }
+            valid_sessions.append(entry)
+
+    return jsonify(valid_sessions)
+
+
+@app.route("/api/session/<session_id>")
+def api_session(session_id):
+    """Retrieves full details of a specific chat session."""
+    saved = _load_history()
+    for s in saved:
+        if s.get("id") == session_id or s.get("filename") == session_id or s.get("filename") == f"{session_id}.mp4":
+            return jsonify(s)
+
+    # Fallback to checking disk
+    f = OUTPUT_DIR / f"{session_id}.mp4"
+    if not f.exists():
+        f = OUTPUT_DIR / session_id
+    if f.exists():
+        clean_q = f.stem[16:].replace("_", " ") if len(f.stem) > 16 else f.stem.replace("_", " ")
+        return jsonify({
+            "id": f.stem,
+            "question": clean_q,
+            "provider": "groq",
+            "steps": [],
             "filename": f.name,
             "size_mb": round(f.stat().st_size / (1024 * 1024), 1),
             "created": datetime.fromtimestamp(f.stat().st_mtime).strftime("%d %b %Y, %I:%M %p"),
         })
-    return jsonify(videos)
+
+    return jsonify({"error": "Session not found"}), 404
+
+
+@app.route("/api/videos")
+def api_videos():
+    return api_history()
 
 
 @app.route("/video/<filename>")

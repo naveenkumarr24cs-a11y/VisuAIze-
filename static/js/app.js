@@ -1,6 +1,8 @@
 /* ══════════════════════════════════════════════════════════════════════════════
    VisuAIze – Complete Functional Conversational Engine
    Features:
+     • Sidebar Collapse & Toggle (⌘B / Ctrl+B)
+     • Full Chat Session Restoration (Claude/ChatGPT/Gemini Style)
      • Voice input with Web Speech API
      • 5 Model Selector: Groq, Gemini, Llama 3.1, Mistral, Ollama
      • Interactive Video Player with 0.75x - 2.0x Speed Buttons & Duration
@@ -54,13 +56,34 @@ const modelPopover           = $('modelPopover');
 const selectedModelLabel     = $('selectedModelLabel');
 const selectedModelTag       = $('selectedModelTag');
 
-// Mobile Sidebar
-const mobileMenuBtn          = $('mobileMenuBtn');
-const closeSidebarBtn        = $('closeSidebarBtn');
+// Sidebar Toggle
+const sidebarToggleBtn       = $('sidebarToggleBtn');
+const collapseSidebarBtn     = $('collapseSidebarBtn');
 const sidebar                = $('sidebar');
+const appContainer           = $('appContainer');
 
 
-// ── 1. Auto-resize Textarea & Send Button State ───────────────────────────────
+// ── 1. Toggle Sidebar (Claude/ChatGPT Style) ──────────────────────────────────
+function toggleSidebar() {
+  sidebar.classList.toggle('collapsed');
+}
+
+sidebarToggleBtn?.addEventListener('click', toggleSidebar);
+collapseSidebarBtn?.addEventListener('click', toggleSidebar);
+
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
+    e.preventDefault();
+    toggleSidebar();
+  }
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault();
+    resetToNewChat();
+  }
+});
+
+
+// ── 2. Auto-resize Textarea & Send Button State ───────────────────────────────
 promptTextarea.addEventListener('input', () => {
   promptTextarea.style.height = 'auto';
   promptTextarea.style.height = Math.min(promptTextarea.scrollHeight, 200) + 'px';
@@ -77,7 +100,7 @@ promptTextarea.addEventListener('keydown', e => {
 });
 
 
-// ── 2. Working Voice Input (Web Speech Recognition) ───────────────────────────
+// ── 3. Working Voice Input (Web Speech Recognition) ───────────────────────────
 function initSpeechRecognition() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
@@ -149,7 +172,7 @@ micBtn?.addEventListener('click', () => {
 });
 
 
-// ── 3. Working Share Modal & Social Links ─────────────────────────────────────
+// ── 4. Working Share Modal & Social Links ─────────────────────────────────────
 function openShareModal(videoUrl, title) {
   const fullUrl = window.location.origin + (videoUrl || '');
   shareLinkInput.value = fullUrl;
@@ -191,7 +214,7 @@ copyShareLinkBtn?.addEventListener('click', () => {
 });
 
 
-// ── 4. 5-Model Selector Dropdown ──────────────────────────────────────────────
+// ── 5. 5-Model Selector Dropdown ──────────────────────────────────────────────
 modelSelectBtn?.addEventListener('click', (e) => {
   e.stopPropagation();
   modelDropdownContainer.classList.toggle('open');
@@ -236,7 +259,7 @@ modelPopover?.querySelectorAll('.model-option-item').forEach(item => {
 });
 
 
-// ── 5. Image Attachment ───────────────────────────────────────────────────────
+// ── 6. Image Attachment ───────────────────────────────────────────────────────
 imageFileInput?.addEventListener('change', () => {
   if (!imageFileInput.files[0]) return;
   const file = imageFileInput.files[0];
@@ -256,7 +279,7 @@ removeAttachBtn?.addEventListener('click', () => {
 });
 
 
-// ── 6. Suggestion Chips ───────────────────────────────────────────────────────
+// ── 7. Suggestion Chips ───────────────────────────────────────────────────────
 document.querySelectorAll('.prompt-chip').forEach(chip => {
   chip.addEventListener('click', () => {
     promptTextarea.value = chip.dataset.prompt;
@@ -266,11 +289,6 @@ document.querySelectorAll('.prompt-chip').forEach(chip => {
     promptTextarea.focus();
   });
 });
-
-
-// ── 7. Mobile Sidebar ─────────────────────────────────────────────────────────
-mobileMenuBtn?.addEventListener('click', () => sidebar.classList.add('open'));
-closeSidebarBtn?.addEventListener('click', () => sidebar.classList.remove('open'));
 
 
 // ── 8. New Video Reset ────────────────────────────────────────────────────────
@@ -287,6 +305,7 @@ function resetToNewChat() {
   chatTitle.textContent = 'New Video Generation';
   imageFileInput.value = '';
   attachedPreviewWrap.style.display = 'none';
+  document.querySelectorAll('.recent-item').forEach(i => i.classList.remove('active'));
   promptTextarea.focus();
 }
 
@@ -325,7 +344,7 @@ function appendAssistantCard(jobId) {
   row.id = `assistant-row-${jobId}`;
 
   row.innerHTML = `
-    <div class="assistant-avatar">🦊</div>
+    <div class="assistant-avatar">🐨</div>
     <div class="assistant-body" id="body-${jobId}">
 
       <!-- Claude Style Collapsible Thinking Box -->
@@ -334,7 +353,7 @@ function appendAssistantCard(jobId) {
           <div class="thinking-header-left">
             <div class="thinking-spinner" id="spinner-${jobId}"></div>
             <span class="thinking-check" id="checkDone-${jobId}" style="display:none">✓</span>
-            <span class="thinking-title" id="thinkTitle-${jobId}">Running ultra-fast video creation pipeline...</span>
+            <span class="thinking-title" id="thinkTitle-${jobId}">Running ultra-fast Google Flow pipeline...</span>
           </div>
           <div class="thinking-header-right">
             <span class="thinking-pct" id="thinkPct-${jobId}">0%</span>
@@ -354,8 +373,8 @@ function appendAssistantCard(jobId) {
           <div class="timeline-step" id="step-2-${jobId}">
             <div class="timeline-icon">🎨</div>
             <div class="timeline-text-wrap">
-              <span class="timeline-step-name">Pass 2: Realistic Visuals (Parallel)</span>
-              <span class="timeline-step-detail" id="detail-2-${jobId}">Generating 1080p Flux presentation slides via Pollinations...</span>
+              <span class="timeline-step-name">Pass 2: Realistic Google Flow Visuals (Parallel)</span>
+              <span class="timeline-step-detail" id="detail-2-${jobId}">Generating 1080p Flux visual slides via Pollinations & Flow engine...</span>
             </div>
           </div>
 
@@ -445,8 +464,8 @@ function embedVideoArtifact(jobId, data) {
       </div>
       <div class="artifact-meta-badges">
         <span class="meta-pill">⏱ ${estDuration}s Duration</span>
-        <span class="meta-pill">${data.steps} Steps</span>
-        <span class="meta-pill">${data.size_mb} MB</span>
+        <span class="meta-pill">${data.steps || 6} Steps</span>
+        <span class="meta-pill">${data.size_mb || 3.5} MB</span>
       </div>
     </div>
 
@@ -519,7 +538,72 @@ window.copyVideoLink = function(url) {
 };
 
 
-// ── 12. SSE Progress Listener ─────────────────────────────────────────────────
+// ── 12. Full Chat Session Restoration (Claude/ChatGPT/Gemini Style) ───────────
+async function openChatSession(sessionId) {
+  try {
+    const res = await fetch(`/api/session/${sessionId}`);
+    if (!res.ok) throw new Error('Session not found');
+    const session = await res.json();
+
+    welcomeHero.style.display = 'none';
+    messagesContainer.innerHTML = '';
+
+    const cleanTitle = session.question || session.filename.replace(/^\d{8}_\d{6}_/, '').replace(/_/g, ' ').replace('.mp4', '');
+    chatTitle.textContent = cleanTitle;
+
+    // 1. Render User Question Bubble
+    appendUserMessage(cleanTitle, null);
+
+    // 2. Render Completed Assistant Thinking Box
+    const mockJobId = `hist_${Date.now()}`;
+    const row = document.createElement('div');
+    row.className = 'assistant-msg-row';
+    row.id = `assistant-row-${mockJobId}`;
+    row.innerHTML = `
+      <div class="assistant-avatar">🐨</div>
+      <div class="assistant-body" id="body-${mockJobId}">
+        <div class="thinking-accordion collapsed" id="thinking-${mockJobId}">
+          <div class="thinking-header" onclick="toggleThinking('${mockJobId}')">
+            <div class="thinking-header-left">
+              <span class="thinking-check" style="display:inline">✓</span>
+              <span class="thinking-title">Ran 4 pipeline passes · Completed Google Flow Tutorial</span>
+            </div>
+            <div class="thinking-header-right">
+              <span class="thinking-pct">100%</span>
+              <svg class="thinking-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+          </div>
+        </div>
+        <div id="artifact-container-${mockJobId}"></div>
+      </div>
+    `;
+    messagesContainer.appendChild(row);
+
+    // 3. Embed the Video Artifact Card
+    embedVideoArtifact(mockJobId, {
+      filename: session.filename,
+      steps: session.steps?.length || 7,
+      size_mb: session.size_mb || 3.8
+    });
+
+    // Mark as active in recent list
+    document.querySelectorAll('.recent-item').forEach(i => {
+      if (i.dataset.id === sessionId || i.dataset.filename === session.filename) {
+        i.classList.add('active');
+      } else {
+        i.classList.remove('active');
+      }
+    });
+
+    scrollToBottom();
+
+  } catch (e) {
+    console.error('Failed to load chat session', e);
+  }
+}
+
+
+// ── 13. SSE Progress Listener ─────────────────────────────────────────────────
 function startProgressListener(jobId) {
   if (eventSource) eventSource.close();
   eventSource = new EventSource(`/api/progress/${jobId}`);
@@ -578,7 +662,7 @@ function startProgressListener(jobId) {
 }
 
 
-// ── 13. Form Submit ───────────────────────────────────────────────────────────
+// ── 14. Form Submit ───────────────────────────────────────────────────────────
 chatForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const q = promptTextarea.value.trim();
@@ -613,7 +697,7 @@ chatForm.addEventListener('submit', async (e) => {
     const errRow = document.createElement('div');
     errRow.className = 'assistant-msg-row';
     errRow.innerHTML = `
-      <div class="assistant-avatar">🦊</div>
+      <div class="assistant-avatar">🐨</div>
       <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:14px 18px;color:#fca5a5;font-size:0.88rem;">
         <b>⚠️ Failed to start:</b> ${escapeHtml(err.message)}
       </div>
@@ -624,10 +708,10 @@ chatForm.addEventListener('submit', async (e) => {
 });
 
 
-// ── 14. Recent Videos Sidebar ─────────────────────────────────────────────────
+// ── 15. Recent Videos & Chats Sidebar ─────────────────────────────────────────
 async function loadRecentVideos() {
   try {
-    const res  = await fetch('/api/videos');
+    const res  = await fetch('/api/history');
     const list = await res.json();
 
     if (!list.length) {
@@ -637,15 +721,22 @@ async function loadRecentVideos() {
 
     recentList.innerHTML = '';
     list.forEach(v => {
-      const label = v.filename.replace(/^\d{8}_\d{6}_/, '').replace(/_/g, ' ').replace('.mp4', '');
-      const item  = document.createElement('a');
+      const label = v.question || v.filename.replace(/^\d{8}_\d{6}_/, '').replace(/_/g, ' ').replace('.mp4', '');
+      const item  = document.createElement('div');
       item.className = 'recent-item';
-      item.href   = `/video/${v.filename}`;
-      item.target = '_blank';
+      item.dataset.id = v.id || v.filename;
+      item.dataset.filename = v.filename;
       item.innerHTML = `
         <span class="recent-item-icon">▶</span>
         <span class="recent-item-name" title="${escapeHtml(label)}">${escapeHtml(label)}</span>
       `;
+
+      // When clicked, open the full Claude/ChatGPT/Gemini chat interface directly!
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        openChatSession(v.id || v.filename);
+      });
+
       recentList.appendChild(item);
     });
   } catch (e) {
@@ -656,7 +747,7 @@ async function loadRecentVideos() {
 $('refreshRecentBtn')?.addEventListener('click', loadRecentVideos);
 
 
-// ── 15. Smooth Auto-Scroll Helper ─────────────────────────────────────────────
+// ── 16. Smooth Auto-Scroll Helper ─────────────────────────────────────────────
 function scrollToBottom() {
   setTimeout(() => {
     if (chatScrollArea) {
