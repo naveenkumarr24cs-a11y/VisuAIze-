@@ -24,23 +24,23 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
 W = 1280
 H = 720
 
-# ── Color Palette ────────────────────────────────────────────────────────────
-BG_DARK    = (14, 16, 26)
-BG_MID     = (20, 24, 40)
-BG_PANEL   = (16, 19, 36, 245)
+# ── Color Palette (Pure Dark Black & Dark White Minimalist) ─────────────────
+BG_DARK    = (8, 8, 11)
+BG_MID     = (15, 15, 20)
+BG_PANEL   = (17, 17, 23, 248)
 
-INDIGO     = (99, 102, 241)        # Primary Indigo
-INDIGO_LT  = (129, 140, 248)       # Light Indigo
-VIOLET     = (139, 92, 246)        # Violet
-AMBER      = (251, 191, 36)        # Amber/Gold
-EMERALD    = (52, 211, 153)        # Emerald Green
-ROSE       = (251, 113, 133)       # Rose/Coral
-CYAN       = (34, 211, 238)        # Cyan
+INDIGO     = (255, 255, 255)       # Pure White Accent
+INDIGO_LT  = (225, 225, 235)       # Silver White
+VIOLET     = (200, 200, 215)       # Pale Silver
+AMBER      = (240, 240, 245)       # Light Monochrome
+EMERALD    = (255, 255, 255)       # Crisp White
+ROSE       = (220, 220, 225)       # Light Gray
+CYAN       = (210, 215, 225)       # Cool Silver
 
 TXT_WHITE  = (255, 255, 255)
-TXT_SILVER = (226, 232, 240)
-TXT_MUTED  = (148, 163, 184)
-TXT_DIM    = (100, 116, 139)
+TXT_SILVER = (225, 225, 230)
+TXT_MUTED  = (150, 150, 160)
+TXT_DIM    = (90, 90, 100)
 
 # ── Image Fetching Settings ──────────────────────────────────────────────────
 HEADERS = {
