@@ -247,61 +247,112 @@ def _call_gemini_api(prompt: str, system_prompt: str) -> str:
     raise RuntimeError("All Gemini models failed.")
 
 
+def _call_huggingface_api(prompt: str, system_prompt: str) -> str:
+    """Calls Hugging Face Inference API."""
+    api_key = os.getenv("HUGGINGFACE_API_KEY") or os.getenv("HF_VIDEO_TOKEN")
+    if not api_key:
+        raise ValueError("HUGGINGFACE_API_KEY not set.")
+    model = os.getenv("HF_MODEL", "meta-llama/Meta-Llama-3.1-8B-Instruct")
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    payload = {
+        "inputs": f"<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n{system_prompt}<|eot_id|><|start_header_id|>user<|end_header_id|>\n{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n",
+        "parameters": {"max_new_tokens": 2048, "temperature": 0.7, "return_full_text": False}
+    }
+    res = requests.post(f"https://api-inference.huggingface.co/models/{model}", headers=headers, json=payload, timeout=40)
+    res.raise_for_status()
+    data = res.json()
+    if isinstance(data, list) and data and "generated_text" in data[0]:
+        return data[0]["generated_text"]
+    return str(data)
+
+def _call_mistral_api(prompt: str, system_prompt: str) -> str:
+    """Calls Mistral API or falls back to Groq."""
+    api_key = os.getenv("MISTRAL_API_KEY")
+    if not api_key:
+        return _call_groq_api(prompt, system_prompt)
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    payload = {
+        "model": "mistral-small-latest",
+        "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": prompt}],
+        "temperature": 0.7, "max_tokens": 2048, "response_format": {"type": "json_object"}
+    }
+    res = requests.post("https://api.mistral.ai/v1/chat/completions", headers=headers, json=payload, timeout=30)
+    res.raise_for_status()
+    return res.json()['choices'][0]['message']['content']
+
+def _call_ollama_api(prompt: str, system_prompt: str) -> str:
+    """Calls local Ollama instance."""
+    base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    model = os.getenv("OLLAMA_MODEL", "llama3.2")
+    payload = {
+        "model": model,
+        "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": prompt}],
+        "stream": False, "format": "json"
+    }
+    res = requests.post(f"{base_url}/api/chat", json=payload, timeout=60)
+    res.raise_for_status()
+    return res.json().get("message", {}).get("content", "")
+
 # ============================================================================
 # MAIN GENERATION LOGIC
 # ============================================================================
 
-def generate_pedagogical_script(topic: str, visual_style: str = 'classic', complexity: str = 'STUDENT') -> dict:
+def generate_pedagogical_script(
+    topic: str,
+    visual_style: str = 'classic',
+    complexity: str = 'STUDENT',
+    provider: str = 'groq'
+) -> dict:
     """
-    Generates a NotebookLM-style Problem->Analogy->Solution pedagogical script.
+    Generates a structured educational script using the specified AI provider with cascading fallbacks.
     
     Args:
         topic (str): The subject matter to teach.
-        visual_style (str): The aesthetic style for image prompts (e.g., 'whiteboard', 'kawaii').
+        visual_style (str): The aesthetic style for image prompts.
         complexity (str): The target audience comprehension level.
+        provider (str): 'groq', 'gemini', 'llama31', 'mistral', or 'ollama'.
         
     Returns:
         dict: The structured pedagogical script in JSON format.
     """
-    print(f"🧠 [Pedagogy] Generating P→A→S script for topic: '{topic}'...")
+    print(f"🧠 [Script Engine] Generating tutorial script for: '{topic}' using {provider.upper()}...")
     
-    # Inject variables into the system prompt
     system_prompt = PEDAGOGICAL_SYSTEM_PROMPT.replace("<inject_visual_style>", visual_style)
     system_prompt = system_prompt.replace("<inject_complexity>", complexity)
+    user_prompt = f"Write a complete step-by-step tutorial script explaining this topic: '{topic}'. Remember to return ONLY valid JSON."
     
-    user_prompt = f"Write a pedagogical P->A->S script explaining this topic: '{topic}'. Remember to return ONLY valid JSON."
+    # Define provider attempt order based on user selection
+    provider_clean = (provider or "groq").lower().strip()
     
-    raw_response = ""
-    script_data = None
+    attempts = []
+    if provider_clean == "gemini":
+        attempts = [("Gemini", _call_gemini_api), ("Groq", _call_groq_api), ("HuggingFace", _call_huggingface_api)]
+    elif provider_clean == "llama31":
+        attempts = [("HuggingFace", _call_huggingface_api), ("Groq", _call_groq_api), ("Gemini", _call_gemini_api)]
+    elif provider_clean == "mistral":
+        attempts = [("Mistral", _call_mistral_api), ("Groq", _call_groq_api), ("Gemini", _call_gemini_api)]
+    elif provider_clean == "ollama":
+        attempts = [("Ollama", _call_ollama_api), ("Groq", _call_groq_api), ("Gemini", _call_gemini_api)]
+    else: # default groq
+        attempts = [("Groq", _call_groq_api), ("Gemini", _call_gemini_api), ("HuggingFace", _call_huggingface_api)]
     
-    # Attempt 1: Groq (llama-3.3-70b-versatile)
-    try:
-        print("🧠 [Pedagogy] Attempting generation with Groq API (llama-3.3-70b-versatile)...")
-        raw_response = _call_groq_api(user_prompt, system_prompt)
-        cleaned_json = _clean_json_response(raw_response)
-        script_data = json.loads(cleaned_json)
-        print("✨ [Pedagogy] Successfully generated script via Groq!")
-        return script_data
-    except Exception as e:
-        print(f"⚠️ [Pedagogy] Groq generation failed: {e}")
-        
-    # Attempt 2: Gemini
-    if not script_data:
+    for prov_name, call_fn in attempts:
         try:
-            print("🧠 [Pedagogy] Falling back to Gemini API...")
-            raw_response = _call_gemini_api(user_prompt, system_prompt)
-            cleaned_json = _clean_json_response(raw_response)
-            script_data = json.loads(cleaned_json)
-            print("✨ [Pedagogy] Successfully generated script via Gemini!")
-            return script_data
+            print(f"🧠 [Script Engine] Calling {prov_name} API...")
+            raw_response = call_fn(user_prompt, system_prompt)
+            if raw_response:
+                cleaned_json = _clean_json_response(raw_response)
+                script_data = json.loads(cleaned_json)
+                if isinstance(script_data, dict) and ("problem_hook" in script_data or "solution_steps" in script_data or "steps" in script_data):
+                    print(f"✨ [Script Engine] Successfully generated script via {prov_name}!")
+                    return script_data
         except Exception as e:
-            print(f"⚠️ [Pedagogy] Gemini generation failed: {e}")
+            print(f"⚠️ [Script Engine] {prov_name} generation failed: {e}")
+            continue
             
-    # Attempt 3: Fallback Template
-    if not script_data:
-        print("🛑 [Pedagogy] All API attempts failed or APIs unavailable. Using hardcoded fallback script.")
-        print("💡 [Pedagogy] Check your GROQ_API_KEY or GEMINI_API_KEY environment variables.")
-        return _get_fallback_script(topic, visual_style)
+    print("🛑 [Script Engine] All API attempts exhausted. Using intelligent built-in generator.")
+    return _get_fallback_script(topic, visual_style)
+
 
 # ============================================================================
 # LEGACY FORMAT CONVERTER

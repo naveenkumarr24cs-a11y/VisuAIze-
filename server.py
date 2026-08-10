@@ -141,20 +141,21 @@ def _run_pipeline(job_id: str, question_or_spec: Any, provider: str, image_path:
         tmp_audio.mkdir(parents=True, exist_ok=True)
         output_path = str(OUTPUT_DIR / f"{session}.mp4")
 
-        # Phase 1 – NotebookLM P→A→S AI Scripting
-        push(1, 4, f"🧠 Generating P→A→S script with {provider.title()} AI...",
-             "Problem → Analogy → Solution pedagogical structure")
+        # Phase 1 – AI Tutorial Scripting
+        push(1, 4, f"🧠 Writing structured tutorial script with {provider.title()}...",
+             "Generating comprehensive step-by-step breakdown")
         try:
             from pedagogy_engine import generate_pedagogical_script, pedagogical_to_steps
             pas_script = generate_pedagogical_script(
                 topic=question,
                 visual_style=visual_style,
-                complexity=spec.get("complexity", "STUDENT")
+                complexity=spec.get("complexity", "STUDENT"),
+                provider=provider
             )
             steps = pedagogical_to_steps(pas_script)
-            print(f"[Pedagogy] P→A→S script: {len(steps)} steps generated")
+            print(f"[Pedagogy Engine] Generated {len(steps)} steps successfully via {provider.upper()}")
         except Exception as e:
-            print(f"[Pedagogy] Fallback to legacy generator: {e}")
+            print(f"[Pedagogy Engine] Fallback to standard generator: {e}")
             from ai_provider import generate_steps
             steps = generate_steps(spec, image_path)
 
@@ -163,6 +164,7 @@ def _run_pipeline(job_id: str, question_or_spec: Any, provider: str, image_path:
 
         push(1, 4, f"✅ Script ready ({len(steps)} steps)!",
              ", ".join(s["title"] for s in steps[:3]) + "...")
+
 
         # Phase 2 – AI Visual Slides (Parallel)
         push(2, 4, f"🎨 Generating {visual_style} style visual slides...",
@@ -221,8 +223,10 @@ def _run_pipeline(job_id: str, question_or_spec: Any, provider: str, image_path:
         import traceback
         err = str(e)
         tb  = traceback.format_exc()
+        print(f"\n❌ [Pipeline Error in job {job_id}]: {err}\n{tb}\n")
         _job_status[job_id] = {"status": "error", "error": err}
         q.put({"type": "error", "error": err, "traceback": tb})
+
 
     finally:
         _schedule_cleanup(job_id, delay=1800.0)

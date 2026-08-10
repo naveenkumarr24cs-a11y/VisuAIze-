@@ -209,27 +209,27 @@ def _fetch_ai_image(prompt: str, style: str = "classic") -> Image.Image | None:
             pass
 
     # Direct Pollinations fetch
-    clean_p = urllib.parse.quote(full_prompt[:450])
+    clean_p = urllib.parse.quote(full_prompt[:350])
     seed = random.randint(100, 99999)
 
     urls = [
-        f"https://image.pollinations.ai/prompt/{clean_p}?width={SPLIT_X}&height={H}&model=flux&nologo=true&seed={seed}&enhance=true",
         f"https://image.pollinations.ai/prompt/{clean_p}?width={SPLIT_X}&height={H}&model=turbo&nologo=true&seed={seed}",
-        f"https://image.pollinations.ai/prompt/{urllib.parse.quote(prompt[:200])}?width={SPLIT_X}&height={H}&nologo=true",
+        f"https://image.pollinations.ai/prompt/{clean_p}?width={SPLIT_X}&height={H}&model=flux&nologo=true&seed={seed}",
+        f"https://image.pollinations.ai/prompt/{urllib.parse.quote(prompt[:150])}?width={SPLIT_X}&height={H}&nologo=true",
     ]
 
     for url in urls:
-        for attempt in range(2):
-            try:
-                r = requests.get(url, headers=HEADERS, timeout=12.0)
-                if r.status_code == 200 and len(r.content) > 5000:
-                    img = Image.open(BytesIO(r.content)).convert("RGBA")
-                    img = ImageEnhance.Contrast(img.convert("RGB")).enhance(1.08)
-                    return img.convert("RGBA").resize((SPLIT_X, H), Image.LANCZOS)
-            except Exception:
-                time.sleep(0.5)
+        try:
+            r = requests.get(url, headers=HEADERS, timeout=6.0)
+            if r.status_code == 200 and len(r.content) > 4000:
+                img = Image.open(BytesIO(r.content)).convert("RGBA")
+                img = ImageEnhance.Contrast(img.convert("RGB")).enhance(1.08)
+                return img.convert("RGBA").resize((SPLIT_X, H), Image.LANCZOS)
+        except Exception:
+            continue
 
     return None
+
 
 
 # ── Gradient Background ───────────────────────────────────────────────────────
@@ -316,34 +316,30 @@ def _draw_step_badge(canvas: Image.Image, n: int, arc_phase: str, style_def: dic
     d.text((nx, ny), num_str, fill=(255, 255, 255), font=num_font)
 
 
-# ── Arc Phase Label ──────────────────────────────────────────────────────────
-def _draw_arc_phase_label(canvas: Image.Image, arc_phase: str, arc_label: str,
+# ── Step Tag Label ──────────────────────────────────────────────────────────
+def _draw_arc_phase_label(canvas: Image.Image, n: int, total: int,
                             style_def: dict, x: int, y: int):
-    """Draw Problem / Analogy / Solution phase label."""
-    if not arc_phase and not arc_label:
-        return
-
-    phase_col = ARC_COLORS.get(arc_phase.lower() if arc_phase else "", style_def["accent"])
-    label_text = arc_label or arc_phase.title()
-    if not label_text:
-        return
+    """Draw clean step progress tag badge."""
+    acc = style_def["accent"]
+    label_text = f"STEP {n} OF {total}"
 
     d = ImageDraw.Draw(canvas)
     lf = _font(11, bold=True)
-    bb = d.textbbox((0, 0), label_text.upper(), font=lf)
+    bb = d.textbbox((0, 0), label_text, font=lf)
     lw = bb[2] - bb[0]
 
     overlay = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
     od = ImageDraw.Draw(overlay)
     pad = 10
     od.rounded_rectangle([(x - pad, y - 4), (x + lw + pad, y + 18)],
-                          radius=10, fill=(*phase_col, 30))
+                          radius=10, fill=(*acc, 30))
     od.rounded_rectangle([(x - pad, y - 4), (x + lw + pad, y + 18)],
-                          radius=10, outline=(*phase_col, 120), width=1)
+                          radius=10, outline=(*acc, 120), width=1)
     canvas.alpha_composite(overlay)
 
     d = ImageDraw.Draw(canvas)
-    d.text((x, y), label_text.upper(), fill=(*phase_col, 230), font=lf)
+    d.text((x, y), label_text, fill=(*acc, 230), font=lf)
+
 
 
 # ── Main Slide Builder ────────────────────────────────────────────────────────
@@ -411,10 +407,11 @@ def build_cinematic_slide(step: dict, total: int, output_path: str,
     _draw_step_badge(canvas, n, arc_phase, style_def, badge_x, badge_y)
     d = ImageDraw.Draw(canvas)
 
-    # Arc phase label next to badge
+    # Step tag label next to badge
     arc_lx = badge_x + 38
     arc_ly = badge_y - 7
-    _draw_arc_phase_label(canvas, arc_phase, arc_label, style_def, arc_lx, arc_ly)
+    _draw_arc_phase_label(canvas, n, total, style_def, arc_lx, arc_ly)
+
 
     ty = badge_y + 40
 
@@ -589,14 +586,14 @@ def generate_all_images(steps: list, output_dir: str, topic: str = "",
     if total == 0:
         return []
 
-    print(f"\n🎨 Generating {total} NotebookLM-quality [{visual_style.upper()}] slides...")
+    print(f"\n🎨 Generating {total} high-definition [{visual_style.upper()}] visual slides in parallel...")
 
-    paths = []
-    for i, step in enumerate(steps):
-        n        = step.get("step_number", i + 1)
+    paths = [None] * total
+
+    def _render_one(idx: int, step: dict):
+        n = step.get("step_number", idx + 1)
         out_path = str(Path(output_dir) / f"step_{n:02d}.png")
-
-        print(f"  🖼  Slide {n}/{total}: {step.get('title', '')[:45]}...")
+        print(f"  🖼  Generating slide {n}/{total}: {step.get('title', '')[:45]}...")
 
         # Build style-aware image prompt
         img_prompt = _build_image_prompt(step, topic, visual_style)
@@ -609,12 +606,16 @@ def generate_all_images(steps: list, output_dir: str, topic: str = "",
             step=step, total=total, output_path=out_path,
             ai_image=ai_img, topic=topic, visual_style=visual_style
         )
+        paths[idx] = out_path
+        print(f"  ✓ Slide {n}/{total} ready")
 
-        paths.append(out_path)
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = [executor.submit(_render_one, i, step) for i, step in enumerate(steps)]
+        for f in futures:
+            try: f.result()
+            except Exception as e: print(f"  ⚠️ Slide generation warning: {e}")
 
-        # Slight delay to avoid rate-limiting Pollinations
-        if i < total - 1:
-            time.sleep(0.6)
+    valid_paths = [p for p in paths if p is not None and Path(p).exists()]
+    print(f"✅ All {len(valid_paths)} [{visual_style.title()}] visual slides ready!")
+    return valid_paths
 
-    print(f"✅ All {total} [{visual_style.title()}] slides ready!")
-    return paths

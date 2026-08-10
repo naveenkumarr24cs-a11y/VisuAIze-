@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>VisuAIze – AI NotebookLM-Style Video Generator</title>
-  <meta name="description" content="VisuAIze: Turn any topic into a stunning step-by-step video tutorial using NotebookLM-inspired AI intelligence with Problem→Analogy→Solution structure."/>
+  <title>VisuAIze – AI Step-by-Step Video Generator</title>
+  <meta name="description" content="VisuAIze: Turn any topic into a stunning step-by-step animated video tutorial with realistic visuals and dual-speaker voice."/>
   <link rel="icon" type="image/png" href="/static/img/main_logo.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -69,7 +69,7 @@
     <div class="sidebar-system-footer">
       <div class="system-status-pill">
         <span class="status-live-dot"></span>
-        <span>NotebookLM Engine Active</span>
+        <span>AI Video Engine Active</span>
       </div>
     </div>
   </aside>
@@ -90,11 +90,6 @@
       </div>
 
       <div class="top-bar-right">
-        <!-- NotebookLM Intelligence Badge -->
-        <div class="nlm-badge" id="nlmBadge" title="NotebookLM-style Problem→Analogy→Solution intelligence active">
-          <span class="nlm-dot"></span>
-          <span>P→A→S Intelligence</span>
-        </div>
         <div class="top-model-badge" id="topModelBadge">
           <span class="pulse-dot-small"></span>
           <span id="topModelName">Groq (Llama 3.3)</span>
@@ -122,22 +117,8 @@
           </div>
           <h1 class="hero-title">What do you want to learn?</h1>
 
-          <!-- NotebookLM Intelligence Banner -->
-          <div class="nlm-intelligence-banner">
-            <div class="nlm-arc-pill">
-              <span class="arc-dot problem"></span>
-              <span>Problem</span>
-              <span class="arc-arrow">→</span>
-              <span class="arc-dot analogy"></span>
-              <span>Analogy</span>
-              <span class="arc-arrow">→</span>
-              <span class="arc-dot solution"></span>
-              <span>Solution</span>
-            </div>
-            <span class="nlm-banner-label">NotebookLM-Style Intelligence</span>
-          </div>
-
           <div class="hero-input-slot" id="heroInputSlot"></div>
+
 
           <!-- ══ VIDEO STYLE PICKER ══ -->
           <div class="style-picker-section" id="stylePickerSection">
@@ -195,11 +176,11 @@
 
           <!-- Dual Voice Toggle -->
           <div class="dual-voice-toggle-row">
-            <label class="dual-voice-toggle" id="dualVoiceToggle" title="Enable Teacher + Student dual-speaker narration (NotebookLM style)">
+            <label class="dual-voice-toggle" id="dualVoiceToggle" title="Enable Teacher + Student dual-speaker narration">
               <input type="checkbox" id="dualVoiceCheckbox" checked/>
               <span class="toggle-slider"></span>
               <span class="toggle-label">
-                🎙️ Dual-Voice Narration <span class="toggle-badge">NotebookLM</span>
+                🎙️ Dual-Voice Narration
               </span>
             </label>
           </div>
@@ -253,7 +234,7 @@
               id="promptTextarea"
               name="question"
               class="prompt-textarea"
-              placeholder="Ask anything to create a NotebookLM-style video tutorial..."
+              placeholder="Ask anything to create a step-by-step video tutorial..."
               rows="1"
               required
             ></textarea>
@@ -346,7 +327,7 @@
                 <span class="recording-pulse" id="recordingPulse"></span>
               </button>
 
-              <button type="submit" class="send-action-btn" id="sendActionBtn" disabled title="Generate NotebookLM video">
+              <button type="submit" class="send-action-btn" id="sendActionBtn" disabled title="Generate video tutorial">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
               </button>
             </div>
@@ -355,9 +336,10 @@
       </div>
 
       <div class="input-footer-note">
-        VisuAIze uses NotebookLM-style Problem→Analogy→Solution intelligence to create human-understandable tutorial videos.
+        VisuAIze transforms any topic into structured visual video tutorials with dual-speaker narration.
       </div>
     </div>
+
 
   </main>
 

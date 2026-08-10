@@ -353,9 +353,6 @@ def _build_cinematic_frame(slide_img: np.ndarray, step: dict, style: dict,
         )
         pil_frame.alpha_composite(veil)
 
-    # ── Animated P→A→S arc phase indicator (top-right) ──────────────────────
-    pil_frame = _draw_pas_indicator(pil_frame, arc_phase, style, t)
-
     # ── Cinematic bottom progress bar ────────────────────────────────────────
     n = step.get("step_number", 1)
     pil_frame = _draw_progress_bar(pil_frame, n, total_steps, style, t, duration)
@@ -368,6 +365,7 @@ def _build_cinematic_frame(slide_img: np.ndarray, step: dict, style: dict,
         pil_frame.paste(vis_crop, (0, 0))
 
     return np.array(pil_frame.convert("RGB"))
+
 
 
 def _draw_pas_indicator(img: Image.Image, phase: str, style: dict, t: float) -> Image.Image:
@@ -493,26 +491,26 @@ def _draw_step_title_overlay(img: Image.Image, step: dict, style: dict,
                           radius=12, fill=(0, 0, 0, 170))
 
     # Accent left bar
-    phase_colors = {"problem": (239,68,68), "analogy": (245,158,11), "solution": (34,197,94)}
-    phase_col = phase_colors.get(arc_phase.lower() if arc_phase else "", style["accent"])
+    acc_col = style["accent"]
     od.rounded_rectangle([(bx, by), (bx + 4, by + bh)],
-                          radius=2, fill=(*phase_col, 230))
+                          radius=2, fill=(*acc_col, 230))
 
-    # Arc phase label (small, above title)
-    if arc_label:
-        arc_text = arc_label.upper()
-        od.text((bx + 14, by + 9), arc_text, fill=(*phase_col, 220), font=_font(10, bold=True))
+    # Step number label (small, above title)
+    step_num = step.get("step_number", 1)
+    step_tag = f"STEP {step_num}"
+    od.text((bx + 14, by + 9), step_tag, fill=(*acc_col, 220), font=_font(10, bold=True))
 
     # Step title
-    title_font = _font(22, bold=True)
+    title_font = _font(20, bold=True)
     title_col  = (255, 255, 255)
-    title_y = by + 28 if arc_label else by + 20
+    title_y = by + 28
     # Shadow
-    od.text((bx + 15, title_y + 1), title, fill=(0, 0, 0, 120), font=title_font)
-    od.text((bx + 14, title_y), title, fill=title_col, font=title_font)
+    od.text((bx + 15, title_y + 1), title[:42], fill=(0, 0, 0, 120), font=title_font)
+    od.text((bx + 14, title_y), title[:42], fill=title_col, font=title_font)
 
     img.alpha_composite(overlay)
     return img
+
 
 
 # ── Speaker Label ─────────────────────────────────────────────────────────────
@@ -747,39 +745,11 @@ def _make_intro_frames(topic: str, total_steps: int,
             sx  = max(40, (W - sw) // 2)
             d.text((sx, sub_y), sub_text, fill=(*muted, sub_alpha), font=sub_font)
 
-        # P→A→S indicator
-        if t > 1.0:
-            pas_t = _ease_out_cubic(min(1.0, (t - 1.0) / 0.5))
-            _draw_pas_on_intro(canvas, pas_t, style)
-
         frames.append(np.array(canvas.convert("RGB")))
 
     frames = _apply_fade(frames, fade_in_sec=0.4, fade_out_sec=0.3)
     return frames
 
-
-def _draw_pas_on_intro(canvas: Image.Image, t: float, style: dict):
-    d = ImageDraw.Draw(canvas)
-    phases = [("Problem", (239,68,68)), ("Analogy", (245,158,11)), ("Solution", (34,197,94))]
-    total_w = 380
-    cx = W // 2 - total_w // 2
-    cy = H // 2 + 80
-
-    alpha = int(200 * t)
-    for i, (label, col) in enumerate(phases):
-        x = cx + i * 130
-        overlay = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
-        od = ImageDraw.Draw(overlay)
-        od.rounded_rectangle([(x, cy), (x + 110, cy + 34)], radius=17, fill=(*col, 30))
-        od.rounded_rectangle([(x, cy), (x + 110, cy + 34)], radius=17,
-                              outline=(*col, alpha), width=1)
-        canvas.alpha_composite(overlay)
-
-        d = ImageDraw.Draw(canvas)
-        d.text((x + 14, cy + 8), label, fill=(*col, alpha), font=_font(13, bold=True))
-
-        if i < 2:
-            d.text((x + 118, cy + 8), "→", fill=(255,255,255,60), font=_font(13))
 
 
 # ── Outro Card ────────────────────────────────────────────────────────────────
@@ -954,36 +924,13 @@ def assemble_video(
     all_clips.append(outro_video)
     print(f"  ✓ Outro card ready ({outro_dur:.1f}s)")
 
-    # ── Cross-dissolve transitions ─────────────────────────────────────────────
-    print(f"\n  🎞️  Applying cross-dissolve transitions between {len(all_clips)} clips...")
+    # ── Video Clip Composition ────────────────────────────────────────────────
+    print(f"\n  🎞️  Composing final video stream from {len(all_clips)} animated clips...")
     if len(all_clips) > 1:
-        # Replace concatenate with cross-dissolve blended clips
-        merged_frames = []
-        for ci, clip in enumerate(all_clips):
-            clip_frames = list(clip.iter_frames())
-            if ci == 0:
-                merged_frames = clip_frames
-            else:
-                merged_frames = _cross_dissolve(merged_frames, clip_frames,
-                                                 FPS, FADE_SEC)
-
-        final = ImageSequenceClip(merged_frames, fps=FPS)
-        # Re-apply audio by building an audio track separately
-        # We'll concatenate audio clips to match
-        try:
-            from moviepy.editor import CompositeAudioClip, concatenate_audioclips
-            audio_clips_only = [c for c in audio_to_close if c is not None]
-            if audio_clips_only:
-                combined_audio = concatenate_audioclips(audio_clips_only)
-                # Trim to video length
-                if combined_audio.duration > final.duration:
-                    combined_audio = combined_audio.subclip(0, final.duration)
-                final = final.set_audio(combined_audio)
-        except Exception as e:
-            print(f"  ⚠️ Audio concatenation skipped: {e}")
-            final = concatenate_videoclips(all_clips)
+        final = concatenate_videoclips(all_clips, method="compose")
     else:
         final = all_clips[0]
+
 
     # ── Render ────────────────────────────────────────────────────────────────
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
