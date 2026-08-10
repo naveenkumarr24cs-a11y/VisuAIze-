@@ -99,24 +99,17 @@ def _fetch_from_pollinations(prompt: str) -> Image.Image | None:
     seed1 = random.randint(1000, 999999)
     seed2 = random.randint(1000, 999999)
 
-    endpoints = [
-        (f"https://image.pollinations.ai/prompt/{encoded}?width={VISUAL_W}&height={VISUAL_H}&nologo=true&seed={seed1}", 45.0),
-        (f"https://image.pollinations.ai/prompt/{encoded}?width={VISUAL_W}&height={VISUAL_H}&model=flux&nologo=true&seed={seed2}", 45.0),
-    ]
+    url = f"https://image.pollinations.ai/prompt/{encoded}?width={VISUAL_W}&height={VISUAL_H}&nologo=true&seed={seed1}"
+    try:
+        r = requests.get(url, headers=_HEADERS, timeout=3.5)
+        if r.status_code == 200 and len(r.content) > 4000:
+            img = Image.open(BytesIO(r.content)).convert("RGBA")
+            rgb = img.convert("RGB")
+            rgb = ImageEnhance.Contrast(rgb).enhance(1.08)
+            return rgb.convert("RGBA")
+    except Exception:
+        pass
 
-    for url, timeout in endpoints:
-        for attempt in range(2):
-            try:
-                r = requests.get(url, headers=_HEADERS, timeout=timeout)
-                if r.status_code == 200 and len(r.content) > 12000:
-                    img = Image.open(BytesIO(r.content)).convert("RGBA")
-                    rgb = img.convert("RGB")
-                    rgb = ImageEnhance.Contrast(rgb).enhance(1.08)
-                    rgb = ImageEnhance.Sharpness(rgb).enhance(1.12)
-                    rgb = ImageEnhance.Color(rgb).enhance(1.06)
-                    return rgb.convert("RGBA")
-            except Exception:
-                time.sleep(0.5)
 
     return None
 

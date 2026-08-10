@@ -4,8 +4,9 @@ import asyncio
 import wave
 import struct
 import shutil
-import tempfile
+import random
 from concurrent.futures import ThreadPoolExecutor
+
 
 if hasattr(sys.stdout, "reconfigure"):
     try: sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -103,17 +104,14 @@ def generate_edge_tts(text: str, voice: str, output_path: str, rate: str = '+0%'
         return False
     
     try:
-        # Use asyncio to run the async generation
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        success = loop.run_until_complete(_async_generate_edge_tts(text, voice, output_path, rate))
-        loop.close()
+        success = asyncio.run(_async_generate_edge_tts(text, voice, output_path, rate))
         if success:
             print(f"🌟 EdgeTTS successfully generated: {output_path}")
         return success
     except Exception as e:
         print(f"❌ EdgeTTS wrapper error: {e}")
         return False
+
 
 def generate_gtts(text: str, output_path: str, lang: str, tld: str) -> bool:
     """Generates audio using gTTS as a fallback."""
@@ -227,11 +225,13 @@ def combine_audio_files(file_paths: list, output_path: str) -> str:
         import subprocess
         ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
         
-        # Create a concat list file
-        concat_txt = os.path.join(os.path.dirname(output_path), f"_concat_{os.getpid()}.txt")
+        # Create a concat list file with forward slashes for Windows ffmpeg compatibility
+        concat_txt = os.path.join(os.path.dirname(output_path), f"_concat_{os.getpid()}_{random.randint(100,999)}.txt")
         with open(concat_txt, "w", encoding="utf-8") as f:
             for vp in valid_files:
-                f.write(f"file '{os.path.abspath(vp)}'\n")
+                clean_p = os.path.abspath(vp).replace("\\", "/")
+                f.write(f"file '{clean_p}'\n")
+
                 
         cmd = [
             ffmpeg_exe, "-y", "-f", "concat", "-safe", "0",
@@ -317,14 +317,19 @@ def generate_all_dual_voices(steps: list, output_dir: str, topic: str = "Topic")
         print(f"✅ Finished step {index+1}/{len(steps)}")
         
     with ThreadPoolExecutor(max_workers=4) as executor:
-        for i, step in enumerate(steps):
-            executor.submit(process_step, i, step)
+        futures = [executor.submit(process_step, i, step) for i, step in enumerate(steps)]
+        for f in futures:
+            try:
+                f.result()
+            except Exception as e:
+                print(f"  ⚠️ Step voice error: {e}")
             
     return {
         'intro': intro_path if os.path.exists(intro_path) else None,
         'steps': step_results,
         'outro': outro_path if os.path.exists(outro_path) else None
     }
+
 
 if __name__ == "__main__":
     install_edge_tts()

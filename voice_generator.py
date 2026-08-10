@@ -139,7 +139,7 @@ def generate_outro_voice(output_dir: str) -> str:
     return wav_path
 
 
-def generate_all_voices(steps: list, output_dir: str, dual_voice: bool = False) -> dict:
+def generate_all_voices(steps: list, output_dir: str, topic: str = "", dual_voice: bool = False) -> dict:
     """
     Generate narrations for all steps.
     If dual_voice=True, uses dual_voice_engine for Teacher+Student voices.
@@ -159,12 +159,13 @@ def generate_all_voices(steps: list, output_dir: str, dual_voice: bool = False) 
         print(f"\n🎙️  Generating DUAL-VOICE narrations ({len(steps) + 2} clips)...")
         try:
             import dual_voice_engine
-            topic = steps[0].get("title", "Tutorial") if steps else "Tutorial"
-            result = dual_voice_engine.generate_all_dual_voices(steps, output_dir, topic)
+            t = topic or (steps[0].get("title", "Tutorial") if steps else "Tutorial")
+            result = dual_voice_engine.generate_all_dual_voices(steps, output_dir, t)
             print(f"✅ Dual-voice narration complete!")
             return result
         except Exception as e:
             print(f"⚠️  Dual-voice failed ({e}), falling back to single-voice...")
+
 
     # Single voice mode (default / fallback)
     print(f"\n🎙️  Generating {len(steps) + 2} voice narrations (Single-Voice Engine)...")

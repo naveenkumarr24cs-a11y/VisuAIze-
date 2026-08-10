@@ -208,27 +208,22 @@ def _fetch_ai_image(prompt: str, style: str = "classic") -> Image.Image | None:
         except Exception:
             pass
 
-    # Direct Pollinations fetch
-    clean_p = urllib.parse.quote(full_prompt[:350])
+    # Direct Pollinations fetch with fast 3.5s timeout
+    clean_p = urllib.parse.quote(full_prompt[:300])
     seed = random.randint(100, 99999)
+    url = f"https://image.pollinations.ai/prompt/{clean_p}?width={SPLIT_X}&height={H}&model=turbo&nologo=true&seed={seed}"
 
-    urls = [
-        f"https://image.pollinations.ai/prompt/{clean_p}?width={SPLIT_X}&height={H}&model=turbo&nologo=true&seed={seed}",
-        f"https://image.pollinations.ai/prompt/{clean_p}?width={SPLIT_X}&height={H}&model=flux&nologo=true&seed={seed}",
-        f"https://image.pollinations.ai/prompt/{urllib.parse.quote(prompt[:150])}?width={SPLIT_X}&height={H}&nologo=true",
-    ]
-
-    for url in urls:
-        try:
-            r = requests.get(url, headers=HEADERS, timeout=6.0)
-            if r.status_code == 200 and len(r.content) > 4000:
-                img = Image.open(BytesIO(r.content)).convert("RGBA")
-                img = ImageEnhance.Contrast(img.convert("RGB")).enhance(1.08)
-                return img.convert("RGBA").resize((SPLIT_X, H), Image.LANCZOS)
-        except Exception:
-            continue
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=3.5)
+        if r.status_code == 200 and len(r.content) > 4000:
+            img = Image.open(BytesIO(r.content)).convert("RGBA")
+            img = ImageEnhance.Contrast(img.convert("RGB")).enhance(1.08)
+            return img.convert("RGBA").resize((SPLIT_X, H), Image.LANCZOS)
+    except Exception:
+        pass
 
     return None
+
 
 
 
