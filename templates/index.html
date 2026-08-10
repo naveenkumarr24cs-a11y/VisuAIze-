@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="/static/css/style.css?v=7"/>
+  <link rel="stylesheet" href="/static/css/style.css?v=15"/>
 </head>
 <body>
 
@@ -55,7 +55,7 @@
     <!-- Recent Videos / Chats Section -->
     <div class="sidebar-section">
       <div class="section-title-row">
-        <span class="section-title">Recent Chats & Videos</span>
+        <span class="section-title">Recents</span>
         <button class="section-icon-btn" id="refreshRecentBtn" title="Refresh list">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         </button>
@@ -118,6 +118,14 @@
             <img src="/static/img/main_logo.png" alt="VisuAIze Logo" class="hero-main-logo"/>
           </div>
           <h1 class="hero-title">What do you want to learn?</h1>
+          <div class="hero-input-slot" id="heroInputSlot"></div>
+          <div class="hero-pill-suggestions">
+            <button type="button" class="hero-pill" onclick="fillPrompt('How does the human heart pump blood?')">🫀 Heart Function</button>
+            <button type="button" class="hero-pill" onclick="fillPrompt('Explain photosynthesis step by step')">🌿 Photosynthesis</button>
+            <button type="button" class="hero-pill" onclick="fillPrompt('How to tie a tie knot step by step')">👔 Tie Knot</button>
+            <button type="button" class="hero-pill" onclick="fillPrompt('How do I change a flat tyre?')">🚗 Flat Tyre</button>
+            <button type="button" class="hero-pill" onclick="fillPrompt('Explain machine learning for beginners')">🤖 AI & ML</button>
+          </div>
         </div>
 
         <!-- Dynamic Chat Messages will be appended here -->
@@ -127,7 +135,7 @@
     </div>
 
     <!-- ══════════════════════════ CLAUDE FLOATING INPUT BAR ══════════════════════════ -->
-    <div class="input-bar-container">
+    <div class="input-bar-container" id="inputBarContainer">
       <div class="floating-input-card" id="floatingInputCard">
         <form id="chatForm" enctype="multipart/form-data">
           <input type="hidden" name="provider" id="providerInput" value="groq"/>
@@ -297,6 +305,36 @@
   </div>
 </div>
 
-<script src="/static/js/app.js?v=7"></script>
+<!-- ══════════════════════════ HOTSPOT INSPECTION MODAL ══════════════════════════ -->
+<div class="hotspot-inspection-modal-backdrop" id="hotspotModalBackdrop">
+  <div class="hotspot-inspection-modal">
+    <div class="inspection-modal-header">
+      <div class="inspection-title-wrap">
+        <div class="inspection-icon-badge">🔍</div>
+        <div>
+          <div class="inspection-title" id="inspectionModalTitle">Component Inspection</div>
+          <span class="inspection-badge-pill" id="inspectionModalStep">Step 1</span>
+        </div>
+      </div>
+      <button class="inspection-close-btn" id="closeInspectionModalBtn">✕</button>
+    </div>
+    <div class="inspection-modal-body">
+      <p class="inspection-desc" id="inspectionModalDesc">Component details and specs will appear here.</p>
+      <div class="inspection-specs-grid">
+        <div>
+          <div class="spec-item-label">Status</div>
+          <div class="spec-item-value" id="inspectionModalStatus">Active</div>
+        </div>
+        <div>
+          <div class="spec-item-label">Role</div>
+          <div class="spec-item-value" id="inspectionModalRole">Core Mechanism</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/app.js?v=15"></script>
 </body>
 </html>
+

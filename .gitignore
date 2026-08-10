@@ -22,3 +22,7 @@ uploads/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Firebase Credentials & Scratch
+*firebase*.json
+scratch/

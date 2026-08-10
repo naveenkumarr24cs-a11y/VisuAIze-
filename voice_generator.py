@@ -5,14 +5,37 @@ Generates audio narrations in seconds using multi-threading.
 """
 
 import os
+import re
+import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
+
+def _clean_tts_text(text: str) -> str:
+    """Strip emojis and unprintable unicode symbols for TTS engines."""
+    if not text:
+        return ""
+    clean = re.sub(r'[^\x00-\x7F]+', ' ', text)
+    clean = re.sub(r'\s+', ' ', clean).strip()
+    return clean or text
 
 
 def _generate_pyttsx3(text: str, output_path: str, rate: int = 170) -> bool:
     """Generate audio using pyttsx3 (offline, Windows SAPI5). Thread-safe."""
     try:
+        text = _clean_tts_text(text)
         import pyttsx3
         engine = pyttsx3.init()
         engine.setProperty('rate', rate)
@@ -38,6 +61,7 @@ def _generate_pyttsx3(text: str, output_path: str, rate: int = 170) -> bool:
 def _generate_gtts_safe(text: str, output_path: str) -> bool:
     """Generate audio using gTTS."""
     try:
+        text = _clean_tts_text(text)
         from gtts import gTTS
         tts = gTTS(text=text, lang='en', slow=False)
         tts.save(output_path)

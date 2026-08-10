@@ -329,13 +329,31 @@ document.querySelectorAll('.prompt-chip').forEach(chip => {
 });
 
 
+function setHomeMode() {
+  if (welcomeHero) welcomeHero.style.display = 'flex';
+  const heroSlot  = $('heroInputSlot');
+  const inputCard = $('floatingInputCard');
+  if (heroSlot && inputCard && !heroSlot.contains(inputCard)) {
+    heroSlot.appendChild(inputCard);
+  }
+}
+
+function setChatMode() {
+  if (welcomeHero) welcomeHero.style.display = 'none';
+  const chatSlot  = $('inputBarContainer');
+  const inputCard = $('floatingInputCard');
+  if (chatSlot && inputCard && !chatSlot.contains(inputCard)) {
+    chatSlot.appendChild(inputCard);
+  }
+}
+
 // ── 8. New Video Reset ────────────────────────────────────────────────────────
 function resetToNewChat() {
   if (eventSource) {
     eventSource.close();
     eventSource = null;
   }
-  welcomeHero.style.display = 'block';
+  setHomeMode();
   messagesContainer.innerHTML = '';
   promptTextarea.value = '';
   promptTextarea.style.height = 'auto';
@@ -353,7 +371,7 @@ $('navChats')?.addEventListener('click', (e) => { e.preventDefault(); resetToNew
 
 // ── 9. Append User Message ────────────────────────────────────────────────────
 function appendUserMessage(text, imgDataUrl) {
-  welcomeHero.style.display = 'none';
+  setChatMode();
 
   const row = document.createElement('div');
   row.className = 'user-msg-row';
@@ -391,9 +409,11 @@ function appendAssistantCard(jobId) {
       <div class="thinking-accordion active" id="thinking-${jobId}">
         <div class="thinking-header" onclick="toggleThinking('${jobId}')">
           <div class="thinking-header-left">
-            <div class="thinking-spinner" id="spinner-${jobId}"></div>
+            <div class="thinking-logo-badge" id="spinner-${jobId}">
+              <img src="/static/img/workflow_logo.png" class="thinking-logo-img" alt="Workflow Logo"/>
+            </div>
             <span class="thinking-check" id="checkDone-${jobId}" style="display:none">✓</span>
-            <span class="thinking-title" id="thinkTitle-${jobId}">Running ultra-fast Google Flow pipeline...</span>
+            <span class="thinking-title" id="thinkTitle-${jobId}">Running Google Flow problem-solving pipeline...</span>
           </div>
           <div class="thinking-header-right">
             <span class="thinking-pct" id="thinkPct-${jobId}">0%</span>
@@ -463,6 +483,193 @@ window.toggleThinking = function(jobId) {
 };
 
 
+// ── Hotspot Inspection Modal Listener Setup ────────────────────────────────────
+function setupHotspotModalListeners() {
+  const backdrop = $('hotspotModalBackdrop');
+  const closeBtn = $('closeInspectionModalBtn');
+  if (closeBtn && backdrop) {
+    closeBtn.onclick = () => backdrop.classList.remove('open');
+    backdrop.onclick = (e) => {
+      if (e.target === backdrop) backdrop.classList.remove('open');
+    };
+  }
+}
+
+function openHotspotInspectionModal(component) {
+  setupHotspotModalListeners();
+  const backdrop = $('hotspotModalBackdrop');
+  const title = $('inspectionModalTitle');
+  const step = $('inspectionModalStep');
+  const desc = $('inspectionModalDesc');
+  const status = $('inspectionModalStatus');
+  const role = $('inspectionModalRole');
+
+  if (title) title.textContent = component.name || 'Component Inspection';
+  if (step) step.textContent = component.step || 'Key Mechanism';
+  if (desc) desc.textContent = component.desc || 'Detailed functional description of this system component.';
+  if (status) status.textContent = component.status || 'Active Parameter';
+  if (role) role.textContent = component.role || 'Primary Control Unit';
+
+  if (backdrop) backdrop.classList.add('open');
+}
+
+// ── Render Interactive Hotspots Over Video Container ─────────────────────────
+function renderInteractiveHotspots(playerScreen, steps, videoPlayer, topic) {
+  if (!playerScreen) return;
+
+  // Extract step.components or synthesize realistic fallback hotspots
+  let hotspots = [];
+  if (Array.isArray(steps)) {
+    steps.forEach((s, idx) => {
+      if (Array.isArray(s.components) && s.components.length) {
+        s.components.forEach(c => {
+          hotspots.push({
+            name: c.name || `Component ${idx + 1}`,
+            step: `Step ${s.step_number || idx + 1}: ${s.title || ''}`,
+            desc: c.desc || s.narration || 'Key component mechanism in action.',
+            status: c.status || 'Operational',
+            role: c.role || 'Core Subsystem',
+            x: c.x || (25 + (idx * 20) % 55),
+            y: c.y || (35 + (idx * 15) % 40)
+          });
+        });
+      }
+    });
+  }
+
+  // Fallback hotspots if components array not present in steps metadata
+  if (!hotspots.length) {
+    const cleanTopic = topic || 'Tutorial';
+    hotspots = [
+      {
+        name: `${cleanTopic} Core Unit`,
+        step: 'Step 1: Setup & Target',
+        desc: `Primary central structure managing initial inputs and baseline operation for ${cleanTopic}.`,
+        status: 'Active',
+        role: 'Primary Controller',
+        x: 30,
+        y: 42
+      },
+      {
+        name: 'Flow Mechanism',
+        step: 'Step 2: Processing',
+        desc: 'Regulates directional rate, pressure balance, and internal feedback loops.',
+        status: 'Optimal',
+        role: 'Flow Regulator',
+        x: 68,
+        y: 35
+      },
+      {
+        name: 'Verification Hub',
+        step: 'Step 3: Verification',
+        desc: 'Validates structural equilibrium, output metrics, and safety thresholds.',
+        status: 'Verified',
+        role: 'Quality Assurance',
+        x: 52,
+        y: 68
+      }
+    ];
+  }
+
+  hotspots.forEach(comp => {
+    const badge = document.createElement('div');
+    badge.className = 'interactive-hotspot-badge';
+    badge.style.left = `${comp.x}%`;
+    badge.style.top = `${comp.y}%`;
+    badge.title = `Click to inspect ${comp.name}`;
+    badge.innerHTML = `
+      <span class="hotspot-dot"></span>
+      <span>${escapeHtml(comp.name)}</span>
+    `;
+
+    badge.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (videoPlayer && !videoPlayer.paused) {
+        videoPlayer.pause();
+      }
+      openHotspotInspectionModal(comp);
+    });
+
+    playerScreen.appendChild(badge);
+  });
+}
+
+// ── Render 1-Question Checkpoint Quiz Card ────────────────────────────────────
+function renderVideoQuizCard(cardContainer, data, topic) {
+  if (!cardContainer) return;
+
+  // Retrieve or synthesize quiz data
+  let quiz = data.quiz;
+  if (!quiz) {
+    quiz = {
+      question: `Checkpoint Quiz: In the step-by-step process of "${topic}", what is the primary objective of the core mechanism?`,
+      options: [
+        `Stabilize structural inputs and regulate system flow`,
+        `Completely bypass initial setup parameters`,
+        `Invert operational order without verification`,
+        `Disable live monitoring and feedback loops`
+      ],
+      correctIndex: 0,
+      explanation: `Correct! Establishing stable inputs and regulating flow is crucial for successful execution.`
+    };
+  }
+
+  const quizCard = document.createElement('div');
+  quizCard.className = 'video-quiz-card';
+
+  const optionLetters = ['A', 'B', 'C', 'D'];
+  const optionsHtml = quiz.options.map((opt, idx) => `
+    <button type="button" class="quiz-option-btn" data-index="${idx}">
+      <span class="quiz-option-letter">${optionLetters[idx]}</span>
+      <span>${escapeHtml(opt)}</span>
+    </button>
+  `).join('');
+
+  quizCard.innerHTML = `
+    <div class="quiz-header">
+      <div class="quiz-title-wrap">
+        <span class="quiz-icon">📝</span>
+        <span class="quiz-title">Checkpoint Practice Quiz</span>
+      </div>
+      <span class="quiz-badge">1 Question</span>
+    </div>
+    <div class="quiz-question">${escapeHtml(quiz.question)}</div>
+    <div class="quiz-options-grid" id="quizOptionsGrid">
+      ${optionsHtml}
+    </div>
+    <div class="quiz-feedback-box" id="quizFeedbackBox"></div>
+  `;
+
+  cardContainer.appendChild(quizCard);
+
+  const optionBtns = quizCard.querySelectorAll('.quiz-option-btn');
+  const feedbackBox = quizCard.querySelector('#quizFeedbackBox');
+
+  optionBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const selectedIdx = parseInt(btn.dataset.index, 10);
+      const isCorrect = selectedIdx === quiz.correctIndex;
+
+      // Disable all buttons
+      optionBtns.forEach(b => b.disabled = true);
+
+      if (isCorrect) {
+        btn.classList.add('correct');
+        feedbackBox.className = 'quiz-feedback-box correct';
+        feedbackBox.innerHTML = `✨ <b>Correct!</b> ${escapeHtml(quiz.explanation || 'Great job understanding this key concept!')}`;
+      } else {
+        btn.classList.add('wrong');
+        const correctBtn = quizCard.querySelector(`.quiz-option-btn[data-index="${quiz.correctIndex}"]`);
+        if (correctBtn) correctBtn.classList.add('correct');
+
+        feedbackBox.className = 'quiz-feedback-box wrong';
+        feedbackBox.innerHTML = `✕ <b>Incorrect.</b> Option ${optionLetters[quiz.correctIndex]} is the correct answer. ${escapeHtml(quiz.explanation || '')}`;
+      }
+    });
+  });
+}
+
+
 // ── 11. Embed Final Video Player Artifact with Speed Controls & Details ────────
 function embedVideoArtifact(jobId, data) {
   const container = $(`artifact-container-${jobId}`);
@@ -504,7 +711,7 @@ function embedVideoArtifact(jobId, data) {
   const card = document.createElement('div');
   card.className = 'video-artifact-card';
   card.innerHTML = `
-    <!-- Header with Badges -->
+    <!-- Header with Badges & Complexity Switcher -->
     <div class="artifact-header">
       <div class="artifact-title-wrap">
         <span class="artifact-badge">Ready · 1080p HD</span>
@@ -517,7 +724,7 @@ function embedVideoArtifact(jobId, data) {
       </div>
     </div>
 
-    <!-- 16:9 Video Player -->
+    <!-- 16:9 Video Player Container -->
     <div class="player-screen">
       <video id="video-player-${jobId}" controls autoplay playsinline preload="metadata">
         <source src="${videoUrl}" type="video/mp4"/>
@@ -563,10 +770,15 @@ function embedVideoArtifact(jobId, data) {
     </div>
   `;
 
+  // Render 1-Question Checkpoint Quiz Card below Video
+  renderVideoQuizCard(card, data, cleanTitle);
+
+
   container.appendChild(card);
   scrollToBottom();
   loadRecentVideos();
 }
+
 
 window.setPlayerSpeed = function(jobId, rate, btn) {
   const vid = $(`video-player-${jobId}`);
@@ -589,11 +801,20 @@ window.copyVideoLink = function(url) {
 // ── 12. Full Chat Session Restoration (Claude/ChatGPT/Gemini Style) ───────────
 async function openChatSession(sessionId) {
   try {
+    currentChatSessionId = sessionId;
+    recentList.querySelectorAll('.recent-item').forEach(i => {
+      if (i.dataset.id === sessionId || i.dataset.filename === sessionId) {
+        i.classList.add('active');
+      } else {
+        i.classList.remove('active');
+      }
+    });
+
     const res = await fetch(`/api/session/${sessionId}`);
     if (!res.ok) throw new Error('Session not found');
     const session = await res.json();
 
-    welcomeHero.style.display = 'none';
+    setChatMode();
     messagesContainer.innerHTML = '';
 
     const cleanTitle = session.question || session.filename.replace(/^\d{8}_\d{6}_/, '').replace(/_/g, ' ').replace('.mp4', '');
@@ -602,39 +823,56 @@ async function openChatSession(sessionId) {
     // 1. Render User Question Bubble
     appendUserMessage(cleanTitle, null);
 
-    // 2. Render Completed Assistant Thinking Box
-    const mockJobId = `hist_${Date.now()}`;
-    const row = document.createElement('div');
-    row.className = 'assistant-msg-row';
-    row.id = `assistant-row-${mockJobId}`;
-    row.innerHTML = `
-      <div class="assistant-avatar">
-      <img src="/static/img/workflow_logo.png" class="workflow-avatar-img" alt="Workflow Logo"/>
-    </div>
-      <div class="assistant-body" id="body-${mockJobId}">
-        <div class="thinking-accordion collapsed" id="thinking-${mockJobId}">
-          <div class="thinking-header" onclick="toggleThinking('${mockJobId}')">
-            <div class="thinking-header-left">
-              <span class="thinking-check" style="display:inline">✓</span>
-              <span class="thinking-title">Ran 4 pipeline passes · Completed Google Flow Tutorial</span>
-            </div>
-            <div class="thinking-header-right">
-              <span class="thinking-pct">100%</span>
-              <svg class="thinking-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+    // If text chat session
+    if (session.type === 'chat' || session.messages || !session.filename) {
+      const assistantMsg = session.messages ? (session.messages.find(m => m.sender === 'assistant')?.text || '') : (session.message || '');
+      if (assistantMsg) {
+        const msgRow = document.createElement('div');
+        msgRow.className = 'assistant-msg-row';
+        msgRow.innerHTML = `
+          <div class="assistant-avatar">
+            <img src="/static/img/workflow_logo.png" class="workflow-avatar-img" alt="VisuAIze"/>
+          </div>
+          <div class="assistant-body" style="background:var(--bg-glass-card);border:1px solid var(--border);border-radius:16px;padding:16px 20px;color:var(--text-primary);line-height:1.6;max-width:680px;">
+            ${escapeHtml(assistantMsg).replace(/\n/g, '<br/>')}
+          </div>
+        `;
+        messagesContainer.appendChild(msgRow);
+      }
+    } else {
+      // 2. Render Video Session
+      const mockJobId = `hist_${Date.now()}`;
+      const row = document.createElement('div');
+      row.className = 'assistant-msg-row';
+      row.id = `assistant-row-${mockJobId}`;
+      row.innerHTML = `
+        <div class="assistant-avatar">
+          <img src="/static/img/workflow_logo.png" class="workflow-avatar-img" alt="Workflow Logo"/>
+        </div>
+        <div class="assistant-body" id="body-${mockJobId}">
+          <div class="thinking-accordion collapsed" id="thinking-${mockJobId}">
+            <div class="thinking-header" onclick="toggleThinking('${mockJobId}')">
+              <div class="thinking-header-left">
+                <span class="thinking-check" style="display:inline">✓</span>
+                <span class="thinking-title">Ran 4 pipeline passes · Completed Google Flow Tutorial</span>
+              </div>
+              <div class="thinking-header-right">
+                <span class="thinking-pct">100%</span>
+                <svg class="thinking-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+              </div>
             </div>
           </div>
+          <div id="artifact-container-${mockJobId}"></div>
         </div>
-        <div id="artifact-container-${mockJobId}"></div>
-      </div>
-    `;
-    messagesContainer.appendChild(row);
+      `;
+      messagesContainer.appendChild(row);
 
-    // 3. Embed the Video Artifact Card
-    embedVideoArtifact(mockJobId, {
-      filename: session.filename,
-      steps: session.steps?.length || 7,
-      size_mb: session.size_mb || 3.8
-    });
+      embedVideoArtifact(mockJobId, {
+        filename: session.filename,
+        steps: session.steps?.length || 5,
+        size_mb: session.size_mb || 3.8
+      });
+    }
 
     // Mark as active in recent list
     document.querySelectorAll('.recent-item').forEach(i => {
@@ -646,6 +884,7 @@ async function openChatSession(sessionId) {
     });
 
     scrollToBottom();
+
 
   } catch (e) {
     console.error('Failed to load chat session', e);
@@ -723,7 +962,47 @@ chatForm.addEventListener('submit', async (e) => {
     imgPreviewData = attachedThumb.src;
   }
 
+  // 1. Render User Question Bubble & Switch to Chat Mode
   appendUserMessage(q, imgPreviewData);
+
+  // 1b. INSTANT optimistic sidebar insert so the chat appears immediately
+  const optimisticId = `pending_${Date.now()}`;
+  const optItem = document.createElement('div');
+  optItem.className = 'recent-item active';
+  optItem.id = `opt-${optimisticId}`;
+  optItem.innerHTML = `
+    <span class="recent-item-icon" style="animation: spin 1s linear infinite;">⟳</span>
+    <span class="recent-item-name" title="${escapeHtml(q)}">${escapeHtml(q)}</span>
+  `;
+  // Remove "No videos yet" placeholder if present
+  const emptyMsg = recentList.querySelector('.recent-empty');
+  if (emptyMsg) emptyMsg.remove();
+  // Remove active from any existing items
+  recentList.querySelectorAll('.recent-item').forEach(i => i.classList.remove('active'));
+  // Insert at top
+  recentList.insertBefore(optItem, recentList.firstChild);
+
+  const thinkingRow = document.createElement('div');
+  thinkingRow.className = 'assistant-msg-row';
+  thinkingRow.innerHTML = `
+    <div class="assistant-avatar">
+      <img src="/static/img/workflow_logo.png" class="workflow-avatar-img" alt="VisuAIze"/>
+    </div>
+    <div class="assistant-body">
+      <div class="thinking-accordion active">
+        <div class="thinking-header">
+          <div class="thinking-header-left">
+            <div class="thinking-logo-badge">
+              <img src="/static/img/workflow_logo.png" class="thinking-logo-img" alt="Workflow Logo"/>
+            </div>
+            <span class="thinking-title">VisuAIze is thinking...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  messagesContainer.appendChild(thinkingRow);
+  scrollToBottom();
 
   promptTextarea.value = '';
   promptTextarea.style.height = 'auto';
@@ -737,25 +1016,110 @@ chatForm.addEventListener('submit', async (e) => {
   try {
     const res  = await fetch('/api/generate', { method: 'POST', body: fd });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Server error');
 
+    // Remove thinking placeholder
+    thinkingRow.remove();
+
+    // ── Orchestration Action Handling ─────────────────────────────────────
+    if (json.action === 'chat') {
+      if (json.session_id) currentChatSessionId = json.session_id;
+      const msgRow = document.createElement('div');
+      msgRow.className = 'assistant-msg-row';
+      msgRow.innerHTML = `
+        <div class="assistant-avatar">
+          <img src="/static/img/workflow_logo.png" class="workflow-avatar-img" alt="VisuAIze"/>
+        </div>
+        <div class="assistant-body" style="background:var(--bg-glass-card);border:1px solid var(--border);border-radius:16px;padding:16px 20px;color:var(--text-primary);line-height:1.6;max-width:680px;">
+          ${escapeHtml(json.message).replace(/\n/g, '<br/>')}
+        </div>
+      `;
+      messagesContainer.appendChild(msgRow);
+      scrollToBottom();
+      sendActionBtn.disabled = false;
+      loadRecentVideos();
+      return;
+    }
+
+
+    if (json.action === 'clarify' || json.action === 'refusal' || !res.ok) {
+      const suggestions = json.suggestions && json.suggestions.length ? json.suggestions : [
+        'How does the human heart work?',
+        'How to make scrambled eggs',
+        'Explain machine learning',
+        'How to tie a tie knot'
+      ];
+
+      const suggHtml = suggestions.map(s => `<button class="refusal-chip" onclick="fillPrompt('${escapeHtml(s).replace(/'/g, "\\'")}')">${escapeHtml(s)}</button>`).join('');
+
+      const errRow = document.createElement('div');
+      errRow.className = 'assistant-msg-row';
+      errRow.innerHTML = `
+        <div class="assistant-avatar">
+          <img src="/static/img/workflow_logo.png" class="workflow-avatar-img" alt="VisuAIze"/>
+        </div>
+        <div class="assistant-body">
+          <div class="validation-refusal-card">
+            <div class="refusal-icon">
+              <div class="thinking-logo-badge" style="width:28px;height:28px;">
+                <img src="/static/img/workflow_logo.png" class="thinking-logo-img" style="width:18px;height:18px;" alt="VisuAIze"/>
+              </div>
+            </div>
+            <div class="refusal-text">
+              <p class="refusal-reason">${escapeHtml(json.question || json.error || json.message || "I can't create a tutorial for that.")}</p>
+              <p class="refusal-hint">Try one of these options:</p>
+              <div class="refusal-suggestions">
+                ${suggHtml}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      messagesContainer.appendChild(errRow);
+      scrollToBottom();
+      sendActionBtn.disabled = false;
+      return;
+    }
+
+    // -- Success -- start the video pipeline ----------------------------------------
     activeJobId = json.job_id;
+    // Update optimistic sidebar item with real id when video pipeline starts
+    const optEl = document.getElementById(`opt-${optimisticId}`);
+    if (optEl) {
+      optEl.querySelector('.recent-item-icon').textContent = '🎬';
+      optEl.querySelector('.recent-item-icon').style.animation = '';
+    }
     appendAssistantCard(activeJobId);
     startProgressListener(activeJobId);
 
   } catch (err) {
+    if (typeof thinkingRow !== 'undefined' && thinkingRow) thinkingRow.remove();
     const errRow = document.createElement('div');
     errRow.className = 'assistant-msg-row';
     errRow.innerHTML = `
-      <div class="assistant-avatar">🐨</div>
+      <div class="assistant-avatar">
+        <img src="/static/img/workflow_logo.png" class="workflow-avatar-img" alt="VisuAIze"/>
+      </div>
       <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:14px 18px;color:#fca5a5;font-size:0.88rem;">
-        <b>⚠️ Failed to start:</b> ${escapeHtml(err.message)}
+        <b>⚠️ Connection error:</b> ${escapeHtml(err.message)}
       </div>
     `;
     messagesContainer.appendChild(errRow);
     scrollToBottom();
+    sendActionBtn.disabled = false;
   }
 });
+
+// Fill prompt textarea from refusal suggestion chips
+window.fillPrompt = function(text) {
+  promptTextarea.value = text;
+  promptTextarea.style.height = 'auto';
+  promptTextarea.style.height = Math.min(promptTextarea.scrollHeight, 200) + 'px';
+  sendActionBtn.disabled = false;
+  promptTextarea.focus();
+};
+
+
 
 
 // ── 15. Recent Videos & Chats Sidebar ─────────────────────────────────────────
@@ -771,20 +1135,64 @@ async function loadRecentVideos() {
 
     recentList.innerHTML = '';
     list.forEach(v => {
-      const label = v.question || v.filename.replace(/^\d{8}_\d{6}_/, '').replace(/_/g, ' ').replace('.mp4', '');
-      const item  = document.createElement('div');
+      const label = v.question || (v.filename ? v.filename.replace(/^\d{8}_\d{6}_/, '').replace(/_/g, ' ').replace('.mp4', '') : 'Video Session');
+      const sessionId = v.id || v.filename;
+      const item = document.createElement('div');
       item.className = 'recent-item';
-      item.dataset.id = v.id || v.filename;
-      item.dataset.filename = v.filename;
+      if (currentChatSessionId && currentChatSessionId === sessionId) {
+        item.classList.add('active');
+      }
+      item.dataset.id = sessionId;
+      item.dataset.filename = v.filename || '';
       item.innerHTML = `
-        <span class="recent-item-icon">▶</span>
         <span class="recent-item-name" title="${escapeHtml(label)}">${escapeHtml(label)}</span>
+        <button class="recent-item-delete" title="Delete chat & video" aria-label="Delete chat">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </button>
       `;
 
-      // When clicked, open the full Claude/ChatGPT/Gemini chat interface directly!
+      // Click on item -> open chat session
       item.addEventListener('click', (e) => {
+        if (e.target.closest('.recent-item-delete')) return;
         e.preventDefault();
-        openChatSession(v.id || v.filename);
+        openChatSession(sessionId);
+      });
+
+      // Click on trash button -> delete chat session from local & Firebase
+      const delBtn = item.querySelector('.recent-item-delete');
+      delBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+
+        item.style.opacity = '0.3';
+        item.style.pointerEvents = 'none';
+
+        try {
+          const deleteRes = await fetch(`/api/history/${encodeURIComponent(sessionId)}`, {
+            method: 'DELETE'
+          });
+          const deleteData = await deleteRes.json();
+
+          if (deleteData.success) {
+            item.remove();
+            if (!recentList.children.length) {
+              recentList.innerHTML = '<div class="recent-empty">No videos yet</div>';
+            }
+            if (currentChatSessionId === sessionId) {
+              setHomeMode();
+            }
+          } else {
+            item.style.opacity = '1';
+            item.style.pointerEvents = 'auto';
+          }
+        } catch (err) {
+          console.error('Failed to delete chat session:', err);
+          item.style.opacity = '1';
+          item.style.pointerEvents = 'auto';
+        }
       });
 
       recentList.appendChild(item);
@@ -794,7 +1202,13 @@ async function loadRecentVideos() {
   }
 }
 
+
 $('refreshRecentBtn')?.addEventListener('click', loadRecentVideos);
+
+// Auto-refresh sidebar every 30 seconds (like ChatGPT/Claude)
+setInterval(() => {
+  loadRecentVideos();
+}, 30000);
 
 
 // ── 16. Smooth Auto-Scroll Helper ─────────────────────────────────────────────
@@ -816,4 +1230,18 @@ function escapeHtml(str) {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
+setHomeMode();
+
+// Load history immediately on page load
 loadRecentVideos();
+
+// Fallback load triggers to guarantee recent items render instantly on all browsers
+setTimeout(loadRecentVideos, 300);
+document.addEventListener('DOMContentLoaded', loadRecentVideos);
+window.addEventListener('load', loadRecentVideos);
+window.addEventListener('focus', loadRecentVideos);
+
+// Add CSS for spinning icon
+const spinStyle = document.createElement('style');
+spinStyle.textContent = `@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } display: inline-block; }`;
+document.head.appendChild(spinStyle);

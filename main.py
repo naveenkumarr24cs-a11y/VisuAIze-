@@ -54,7 +54,7 @@ def print_providers():
     print("═" * 65 + "\n")
 
 # Import our modules
-from step_generator import generate_steps
+from ai_provider import generate_steps
 from image_generator import generate_all_images
 from voice_generator import generate_all_voices
 from video_assembler import assemble_video
