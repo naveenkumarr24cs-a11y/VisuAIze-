@@ -14,9 +14,24 @@ This is the core intelligence that makes VisuAIze match NotebookLM quality.
 """
 
 import os
+import sys
 import json
 import re
 import traceback
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+if hasattr(sys.stdout, "reconfigure"):
+    try: sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception: pass
+if hasattr(sys.stderr, "reconfigure"):
+    try: sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception: pass
+
 
 # Optional dependencies for API calls
 try:
@@ -319,14 +334,17 @@ def pedagogical_to_steps(script: dict) -> list:
         
         steps.append({
             'step_number': current_step_index,
-            'title': "The Problem",
+            'title': hook.get('hook_text') or "The Core Challenge",
             'narration': narration,
             'image_prompt': hook.get('visual_prompt', ''),
             'motion_prompt': hook.get('motion_hint', ''),
             'duration_seconds': hook.get('duration_seconds', 6),
             'components': [],
             'teacher_line': hook.get('teacher_line', ''),
-            'student_line': hook.get('student_line', '')
+            'student_line': hook.get('student_line', ''),
+            'arc_phase': 'problem',
+            'arc_label': 'The Problem',
+            'speaker': 'Teacher'
         })
         current_step_index += 1
         
@@ -337,36 +355,44 @@ def pedagogical_to_steps(script: dict) -> list:
         
         steps.append({
             'step_number': current_step_index,
-            'title': "The Analogy",
+            'title': bridge.get('analogy_text') or "Real-World Analogy",
             'narration': narration,
             'image_prompt': bridge.get('visual_prompt', ''),
             'motion_prompt': bridge.get('motion_hint', ''),
             'duration_seconds': bridge.get('duration_seconds', 6),
             'components': [],
             'teacher_line': bridge.get('teacher_line', ''),
-            'student_line': bridge.get('student_line', '')
+            'student_line': bridge.get('student_line', ''),
+            'arc_phase': 'analogy',
+            'arc_label': 'The Analogy',
+            'speaker': 'Teacher'
         })
         current_step_index += 1
         
     # 3. Add Solution Steps
     if 'solution_steps' in script:
+        sol_idx = 1
         for sol_step in script['solution_steps']:
             narration = f"{sol_step.get('teacher_line', '')} {sol_step.get('student_line', '')}".strip()
             
             steps.append({
                 'step_number': current_step_index,
-                'title': sol_step.get('title', f"Step {current_step_index}"),
+                'title': sol_step.get('title', f"Resolution Step {sol_idx}"),
                 'narration': narration,
                 'image_prompt': sol_step.get('visual_prompt', ''),
                 'motion_prompt': sol_step.get('motion_hint', ''),
                 'duration_seconds': sol_step.get('duration_seconds', 5),
                 'components': sol_step.get('components', []),
                 'teacher_line': sol_step.get('teacher_line', ''),
-                'student_line': sol_step.get('student_line', '')
+                'student_line': sol_step.get('student_line', ''),
+                'arc_phase': 'solution',
+                'arc_label': f'Solution {sol_idx}',
+                'speaker': 'Teacher'
             })
             current_step_index += 1
+            sol_idx += 1
             
-    print(f"✅ [Pedagogy] Successfully converted into {len(steps)} legacy steps.")
+    print(f"✅ [Pedagogy] Successfully converted into {len(steps)} legacy steps with P->A->S metadata.")
     return steps
 
 # ============================================================================

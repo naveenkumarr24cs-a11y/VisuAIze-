@@ -1,10 +1,19 @@
 import os
+import sys
 import asyncio
 import wave
 import struct
 import shutil
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
+
+if hasattr(sys.stdout, "reconfigure"):
+    try: sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception: pass
+if hasattr(sys.stderr, "reconfigure"):
+    try: sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception: pass
+
 
 try:
     import edge_tts
@@ -201,51 +210,54 @@ def generate_speaker_voice(text: str, role: str, output_path: str) -> str:
     return output_path
 
 def combine_audio_files(file_paths: list, output_path: str) -> str:
-    """Concatenates multiple audio files into one."""
-    print(f"🔗 Combining {len(file_paths)} audio files into {output_path}...")
-    
+    """Concatenates multiple audio files into one using bundled ffmpeg for perfect audio alignment."""
     valid_files = [f for f in file_paths if os.path.exists(f)]
     
     if not valid_files:
-        print("❌ No valid files to combine!")
         _make_silence_wav(output_path, duration=1.0)
         return output_path
         
-    if PYDUB_AVAILABLE:
-        try:
-            combined = None
-            for fp in valid_files:
-                ext = fp.split('.')[-1].lower()
-                audio = AudioSegment.from_file(fp, format=ext)
-                if combined is None:
-                    combined = audio
-                else:
-                    combined += audio
-            
-            out_ext = output_path.split('.')[-1].lower()
-            combined.export(output_path, format=out_ext)
-            print(f"✅ Successfully combined audio via pydub: {output_path}")
+    if len(valid_files) == 1:
+        shutil.copy(valid_files[0], output_path)
+        return output_path
+
+    # Try bundled ffmpeg from imageio_ffmpeg
+    try:
+        import imageio_ffmpeg
+        import subprocess
+        ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+        
+        # Create a concat list file
+        concat_txt = os.path.join(os.path.dirname(output_path), f"_concat_{os.getpid()}.txt")
+        with open(concat_txt, "w", encoding="utf-8") as f:
+            for vp in valid_files:
+                f.write(f"file '{os.path.abspath(vp)}'\n")
+                
+        cmd = [
+            ffmpeg_exe, "-y", "-f", "concat", "-safe", "0",
+            "-i", concat_txt, "-c", "copy", output_path
+        ]
+        res = subprocess.run(cmd, capture_output=True, timeout=10)
+        try: os.remove(concat_txt)
+        except Exception: pass
+        
+        if res.returncode == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 400:
+            print(f"✅ Successfully combined {len(valid_files)} audio files via ffmpeg: {output_path}")
             return output_path
-        except Exception as e:
-            print(f"❌ pydub combination failed: {e}")
-            
-    print("⚠️ Falling back to binary concatenation (may cause issues for some formats)...")
+    except Exception as e:
+        print(f"⚠️ ffmpeg concat notice: {e}")
+
+    # Fallback to binary concatenation
     try:
         with open(output_path, 'wb') as outfile:
-            for i, fp in enumerate(valid_files):
+            for fp in valid_files:
                 with open(fp, 'rb') as infile:
-                    data = infile.read()
-                    # Skip basic wav headers if not first file (very naive)
-                    if fp.endswith('.wav') and i > 0 and len(data) > 44:
-                        outfile.write(data[44:])
-                    else:
-                        outfile.write(data)
-        print(f"✅ Successfully concatenated audio: {output_path}")
+                    outfile.write(infile.read())
+        return output_path
     except Exception as e:
-        print(f"❌ Basic concatenation failed: {e}")
         _make_silence_wav(output_path, duration=1.0)
-        
-    return output_path
+        return output_path
+
 
 def generate_dual_voice_for_step(step: dict, output_dir: str, step_index: int) -> dict:
     """Generates teacher and student voices for a specific step."""
