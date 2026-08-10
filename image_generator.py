@@ -418,24 +418,60 @@ def build_slide(step: dict, total: int, output_path: str, preloaded_img: Image.I
     return output_path
 
 
-def generate_all_images(steps: list, output_dir: str, topic: str = "") -> list[str]:
+def generate_all_images(steps: list, output_dir: str, topic: str = "",
+                        visual_style: str = "classic") -> list[str]:
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     total = len(steps)
     if total == 0:
         return []
 
-    print(f"\n🎬 Generating {total} Realistic AI Visual Slides...")
+    print(f"\n🎨 Generating {total} {visual_style.upper()} style AI Visual Slides...")
+
+    # Load style renderer
+    try:
+        import style_renderer
+        style_cfg = style_renderer.get_style(visual_style)
+        use_style = True
+    except Exception as e:
+        print(f"  [Style] style_renderer unavailable: {e} — using classic")
+        style_cfg = None
+        use_style = False
 
     paths = []
     for i, step in enumerate(steps):
         n = step.get("step_number", i + 1)
         out_path = os.path.join(output_dir, f"step_{n:02d}.png")
         print(f"  [Visual Engine] Step {n}/{total}: {step.get('title', '')}...")
+
+        # Enhance AI image prompt with style keywords
+        if use_style:
+            try:
+                step = dict(step)
+                orig_prompt = step.get("motion_prompt") or step.get("image_prompt", "")
+                step["motion_prompt"] = style_renderer.apply_style_to_image_prompt(
+                    orig_prompt, visual_style
+                )
+                step["image_prompt"] = step["motion_prompt"]
+            except Exception:
+                pass
+
         ai_img = sora_engine.generate_cinematic_visual(topic or step.get("title", ""), step)
         build_slide(step, total, out_path, preloaded_img=ai_img, topic=topic)
+
+        # Apply style overlay to finished slide
+        if use_style:
+            try:
+                from PIL import Image as PilImg
+                img = PilImg.open(out_path).convert("RGBA")
+                img = style_renderer.apply_style_to_frame(img, visual_style, step)
+                img.convert("RGB").save(out_path, "PNG", quality=92)
+            except Exception as se:
+                print(f"  [Style] Overlay skipped for step {n}: {se}")
+
         paths.append(out_path)
         if i < total - 1:
             time.sleep(0.5)
 
-    print(f"✅ All {total} Realistic Visual Slides Ready!")
+    print(f"✅ All {total} {visual_style.title()} Visual Slides Ready!")
     return paths
+

@@ -359,19 +359,38 @@ def _make_outro_frames(topic: str, num_steps: int, audio_duration: float) -> lis
 # ── Main Assembler Entry Point ────────────────────────────────────────────────
 
 def assemble_video(
-    steps:       list,
-    image_paths: list,
-    audio_data:  dict,
-    output_path: str,
-    topic:       str = "Step-by-Step Guide",
-    job_id:      str = "",
+    steps:        list,
+    image_paths:  list,
+    audio_data:   dict,
+    output_path:  str,
+    topic:        str = "Step-by-Step Guide",
+    job_id:       str = "",
+    visual_style: str = "classic",
 ) -> str:
     """
     Assemble the final animated tutorial MP4.
     All fades are baked into frame arrays — zero dependency on MoviePy fx effects.
     Audio clips are kept open until after write_videofile() completes.
+    visual_style: one of classic, whiteboard, kawaii, watercolor, papercraft, retro_print, heritage
     """
-    print("\n🎬 Animated Video Engine — assembling step-by-step tutorial...")
+    print(f"\n🎬 Animated Video Engine [{visual_style.upper()} style] — assembling tutorial...")
+
+    # Load style palette for color overrides in intro/outro cards
+    try:
+        import style_renderer as _sr
+        _style = _sr.get_style(visual_style)
+        # Override global palette constants for this render
+        global BG_DARK, BG_MID, INDIGO, EMERALD, WHITE, MUTED, CYAN, GOLD
+        BG_DARK  = _style["bg"]
+        BG_MID   = _style["panel_bg"]
+        INDIGO   = _style["accent"]
+        WHITE    = _style["title_color"]
+        MUTED    = _style["muted"]
+        CYAN     = _style["accent"]
+        GOLD     = _style["accent"]
+    except Exception:
+        pass  # Keep defaults if style_renderer unavailable
+
 
     all_clips        = []
     audio_to_close   = []   # keep all audio refs alive until after rendering

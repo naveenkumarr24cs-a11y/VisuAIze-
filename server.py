@@ -127,6 +127,10 @@ def _run_pipeline(job_id: str, question_or_spec: Any, provider: str, image_path:
             question = str(question_or_spec)
             spec = {"subject": question}
 
+        # Extract NotebookLM intelligence parameters
+        visual_style = spec.get("visual_style", "classic") or "classic"
+        dual_voice   = bool(spec.get("dual_voice", True))
+
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         safe = "".join(c for c in question[:30] if c.isalnum() or c in " _-").strip().replace(" ", "_")
         session = f"{timestamp}_{safe}"
@@ -137,39 +141,55 @@ def _run_pipeline(job_id: str, question_or_spec: Any, provider: str, image_path:
         tmp_audio.mkdir(parents=True, exist_ok=True)
         output_path = str(OUTPUT_DIR / f"{session}.mp4")
 
-        # Phase 1 – AI Scripting with Video Specification
-        push(1, 4, f"Generating steps with {provider.title()} AI...", "Analysing intent & parameters")
-        from ai_provider import generate_steps
-        steps = generate_steps(spec, image_path)
+        # Phase 1 – NotebookLM P→A→S AI Scripting
+        push(1, 4, f"🧠 Generating P→A→S script with {provider.title()} AI...",
+             "Problem → Analogy → Solution pedagogical structure")
+        try:
+            from pedagogy_engine import generate_pedagogical_script, pedagogical_to_steps
+            pas_script = generate_pedagogical_script(
+                topic=question,
+                visual_style=visual_style,
+                complexity=spec.get("complexity", "STUDENT")
+            )
+            steps = pedagogical_to_steps(pas_script)
+            print(f"[Pedagogy] P→A→S script: {len(steps)} steps generated")
+        except Exception as e:
+            print(f"[Pedagogy] Fallback to legacy generator: {e}")
+            from ai_provider import generate_steps
+            steps = generate_steps(spec, image_path)
+
         if not steps:
             raise ValueError("The AI model was unable to generate steps for this topic. Please try rephrasing your request.")
 
-        push(1, 4, f"Script ready ({len(steps)} steps)!",
+        push(1, 4, f"✅ Script ready ({len(steps)} steps)!",
              ", ".join(s["title"] for s in steps[:3]) + "...")
 
         # Phase 2 – AI Visual Slides (Parallel)
-        push(2, 4, "Generating animated visual slides...",
+        push(2, 4, f"🎨 Generating {visual_style} style visual slides...",
              f"Fetching AI images for {len(steps)} steps in parallel")
         from image_generator import generate_all_images
-        image_paths = generate_all_images(steps, str(tmp_images), topic=question)
-        push(2, 4, "All visual slides ready!",
-             f"{len(image_paths)} animated slides generated")
+        image_paths = generate_all_images(steps, str(tmp_images), topic=question,
+                                          visual_style=visual_style)
+        push(2, 4, "✅ All visual slides ready!",
+             f"{len(image_paths)} {visual_style} slides generated")
 
-        # Phase 3 – Voice Narrations
-        push(3, 4, "Recording voice narrations...",
-             f"Synthesising {len(steps) + 2} audio clips")
+        # Phase 3 – Dual-Voice Narrations
+        push(3, 4, "🎙️ Recording dual-speaker narrations...",
+             f"Teacher + Student voices for {len(steps) + 2} clips" if dual_voice
+             else f"Synthesising {len(steps) + 2} audio clips")
         from voice_generator import generate_all_voices
-        audio_data = generate_all_voices(steps, str(tmp_audio))
-        push(3, 4, "Voice narrations ready!", "All audio clips created")
+        audio_data = generate_all_voices(steps, str(tmp_audio), dual_voice=dual_voice)
+        push(3, 4, "✅ Voice narrations ready!", "All audio clips created")
 
         # Phase 4 – Animated Video Assembly
-        push(4, 4, "Assembling animated tutorial video...",
-             "Ken Burns · text reveals · crossfade transitions · H.264 ultrafast")
+        push(4, 4, "🎬 Assembling animated tutorial video...",
+             f"Ken Burns · {visual_style} style · crossfade · H.264")
         from video_assembler import assemble_video
         assemble_video(
             steps=steps, image_paths=image_paths,
             audio_data=audio_data, output_path=output_path,
-            topic=question, job_id=job_id
+            topic=question, job_id=job_id,
+            visual_style=visual_style
         )
 
         os.environ["AI_PROVIDER"] = original_provider
@@ -185,14 +205,17 @@ def _run_pipeline(job_id: str, question_or_spec: Any, provider: str, image_path:
             "steps": steps,
             "filename": video_filename,
             "size_mb": file_size,
+            "visual_style": visual_style,
+            "dual_voice": dual_voice,
             "created": datetime.now().strftime("%d %b %Y, %I:%M %p"),
         }
         _add_session(session_record)
 
         _job_status[job_id] = {"status": "done", "filename": video_filename,
-                                "size_mb": file_size, "steps": len(steps), "session": session_record}
+                               "size_mb": file_size, "steps": len(steps), "session": session_record}
         q.put({"type": "done", "filename": video_filename,
                "size_mb": file_size, "steps": len(steps), "session": session_record})
+
 
     except Exception as e:
         import traceback
@@ -203,6 +226,8 @@ def _run_pipeline(job_id: str, question_or_spec: Any, provider: str, image_path:
 
     finally:
         _schedule_cleanup(job_id, delay=1800.0)
+
+
 
 
 # ── Routes ───────────────────────────────────────────────────────────────────
@@ -232,9 +257,11 @@ def api_validate():
 
 @app.route("/api/generate", methods=["POST"])
 def api_generate():
-    question   = request.form.get("question", "").strip()
-    provider   = request.form.get("provider", os.getenv("AI_PROVIDER", "groq")).strip()
-    image_file = request.files.get("image")
+    question    = request.form.get("question", "").strip()
+    provider    = request.form.get("provider", os.getenv("AI_PROVIDER", "groq")).strip()
+    image_file  = request.files.get("image")
+    style       = request.form.get("style", "classic").strip() or "classic"
+    dual_voice  = request.form.get("dual_voice", "true").strip().lower() in ("true", "1", "yes")
 
     if not question:
         return jsonify({"action": "refusal", "error": "Please enter a topic or question."}), 422
@@ -263,6 +290,11 @@ def api_generate():
             spec["_previous_steps"] = last_session["steps"]
             spec["_previous_session_id"] = last_session.get("id")
         print(f"[Context] Resolved against last session: '{spec.get('subject')}'")
+
+    # Inject visual style + dual voice into spec
+    spec["visual_style"] = style
+    spec["dual_voice"] = dual_voice
+    print(f"[Style] Visual style: {style} | Dual-Voice: {dual_voice}")
 
     # ── 2. Orchestration Action Branching ──────────────────────────────────
     if intent == "GENERAL_CONVERSATION":
@@ -319,7 +351,7 @@ def api_generate():
     )
     thread.start()
 
-    return jsonify({"action": "video", "job_id": job_id})
+    return jsonify({"action": "video", "job_id": job_id, "style": style})
 
 
 

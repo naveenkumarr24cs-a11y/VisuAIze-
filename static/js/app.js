@@ -17,6 +17,18 @@ let eventSource      = null;
 let speechRecognizer = null;
 let isRecording      = false;
 let currentVideoData = null;
+let activeStyle      = 'classic';  // NotebookLM visual style
+
+// Style display data
+const STYLE_LABELS = {
+  'classic':     { icon: '🎬', name: 'Classic' },
+  'whiteboard':  { icon: '📋', name: 'Whiteboard' },
+  'kawaii':      { icon: '🌸', name: 'Kawaii' },
+  'watercolor':  { icon: '🎨', name: 'Watercolor' },
+  'papercraft':  { icon: '✂️',  name: 'Papercraft' },
+  'retro_print': { icon: '📰', name: 'Retro Print' },
+  'heritage':    { icon: '🏛️', name: 'Heritage' },
+};
 
 // ── DOM Elements ──────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
@@ -113,6 +125,49 @@ document.addEventListener('keydown', (e) => {
     resetToNewChat();
   }
 });
+
+
+// ── 1b. NotebookLM Style Selector ────────────────────────────────────────────
+window.selectStyle = function(styleName) {
+  activeStyle = styleName;
+
+  // Update hidden input
+  const styleInput = document.getElementById('styleInput');
+  if (styleInput) styleInput.value = styleName;
+
+  // Update card active states
+  document.querySelectorAll('.style-card').forEach(card => {
+    card.classList.toggle('active', card.dataset.style === styleName);
+  });
+
+  // Update the active style bar in input area
+  const info = STYLE_LABELS[styleName] || { icon: '🎬', name: 'Classic' };
+  const iconEl = document.getElementById('activeStyleIcon');
+  const nameEl = document.getElementById('activeStyleName');
+  if (iconEl) iconEl.textContent = info.icon;
+  if (nameEl) nameEl.textContent = info.name;
+
+  console.log(`[VisuAIze] Video style selected: ${styleName}`);
+};
+
+// Initialize style bar on load
+selectStyle('classic');
+
+// ── 1c. Dual Voice Toggle ─────────────────────────────────────────────────────
+const dualVoiceCheckbox = document.getElementById('dualVoiceCheckbox');
+const dualVoiceInput    = document.getElementById('dualVoiceInput');
+const activeVoiceLabel  = document.getElementById('activeVoiceLabel');
+
+if (dualVoiceCheckbox) {
+  dualVoiceCheckbox.addEventListener('change', () => {
+    const isDual = dualVoiceCheckbox.checked;
+    if (dualVoiceInput) dualVoiceInput.value = isDual ? 'true' : 'false';
+    if (activeVoiceLabel) {
+      activeVoiceLabel.textContent = isDual ? '🎙️ Dual Voice' : '🎤 Single Voice';
+    }
+  });
+}
+
 
 
 // ── 2. Auto-resize Textarea & Send Button State ───────────────────────────────

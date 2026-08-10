@@ -1,7 +1,11 @@
 """
-VisuAIze - Ultra Fast Voice Generator (Fixed & Parallel)
-Uses pyttsx3 (offline SAPI5) and fast gTTS fallback.
-Generates audio narrations in seconds using multi-threading.
+VisuAIze - Voice Generator (Upgraded with Dual-Voice Support)
+=============================================================
+Supports:
+  - SINGLE VOICE: pyttsx3 → gTTS → silent fallback
+  - DUAL VOICE: Teacher (AriaNeural) + Student (GuyNeural) via edge-tts
+                Falls back to gTTS per speaker
+Dual-voice mode is activated by DUAL_VOICE=true env variable or the dual_voice param.
 """
 
 import os
@@ -135,10 +139,35 @@ def generate_outro_voice(output_dir: str) -> str:
     return wav_path
 
 
-def generate_all_voices(steps: list, output_dir: str) -> dict:
+def generate_all_voices(steps: list, output_dir: str, dual_voice: bool = False) -> dict:
+    """
+    Generate narrations for all steps.
+    If dual_voice=True, uses dual_voice_engine for Teacher+Student voices.
+    Falls back to single-voice if dual_voice_engine fails.
+    """
     Path(output_dir).mkdir(parents=True, exist_ok=True)
-    print(f"\n🎙️  Generating {len(steps) + 2} voice narrations (Fast Engine)...")
 
+    # Check if any step has dual-voice fields
+    has_dual_fields = any(
+        step.get("teacher_line") and step.get("student_line")
+        for step in steps
+    )
+
+    # Dual voice mode
+    use_dual = dual_voice or os.getenv("DUAL_VOICE", "").lower() in ("true", "1", "yes")
+    if use_dual and has_dual_fields:
+        print(f"\n🎙️  Generating DUAL-VOICE narrations ({len(steps) + 2} clips)...")
+        try:
+            import dual_voice_engine
+            topic = steps[0].get("title", "Tutorial") if steps else "Tutorial"
+            result = dual_voice_engine.generate_all_dual_voices(steps, output_dir, topic)
+            print(f"✅ Dual-voice narration complete!")
+            return result
+        except Exception as e:
+            print(f"⚠️  Dual-voice failed ({e}), falling back to single-voice...")
+
+    # Single voice mode (default / fallback)
+    print(f"\n🎙️  Generating {len(steps) + 2} voice narrations (Single-Voice Engine)...")
     topic = steps[0].get("title", "step by step guide") if steps else "guide"
     intro_path = generate_intro_voice(topic, output_dir)
 

@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>VisuAIze – AI Step-by-Step Video Generator</title>
+  <title>VisuAIze – AI NotebookLM-Style Video Generator</title>
+  <meta name="description" content="VisuAIze: Turn any topic into a stunning step-by-step video tutorial using NotebookLM-inspired AI intelligence with Problem→Analogy→Solution structure."/>
   <link rel="icon" type="image/png" href="/static/img/main_logo.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="/static/css/style.css?v=15"/>
+  <link rel="stylesheet" href="/static/css/style.css?v=20"/>
 </head>
 <body>
 
@@ -22,11 +23,10 @@
     <div class="liquid-orb orb-4"></div>
   </div>
 
-  <!-- ══════════════════════════ SIDEBAR (Main Logo & History) ══════════════════════════ -->
+  <!-- ══════════════════════════ SIDEBAR ══════════════════════════ -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <div class="logo-wrap">
-        <!-- Main Logo (Clean White Lines, No Orange Circle) -->
         <img src="/static/img/main_logo.png" alt="VisuAIze Main Logo" class="brand-main-logo"/>
         <span class="logo-title">Visu<b>AI</b>ze</span>
       </div>
@@ -44,7 +44,7 @@
       </button>
     </div>
 
-    <!-- Navigation Link -->
+    <!-- Navigation Links -->
     <div class="nav-links">
       <a href="#" class="nav-item active" id="navChats">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -52,7 +52,7 @@
       </a>
     </div>
 
-    <!-- Recent Videos / Chats Section -->
+    <!-- Recent Videos Section -->
     <div class="sidebar-section">
       <div class="section-title-row">
         <span class="section-title">Recents</span>
@@ -69,18 +69,17 @@
     <div class="sidebar-system-footer">
       <div class="system-status-pill">
         <span class="status-live-dot"></span>
-        <span>VisuAIze Flow Engine Active</span>
+        <span>NotebookLM Engine Active</span>
       </div>
     </div>
   </aside>
 
-  <!-- ══════════════════════════ MAIN CONTENT AREA ══════════════════════════ -->
+  <!-- ══════════════════════════ MAIN CONTENT ══════════════════════════ -->
   <main class="main-content" id="mainContent">
 
     <!-- Top App Bar -->
     <header class="top-bar">
       <div class="top-bar-left">
-        <!-- Sidebar Toggle Hamburger / Expand Button -->
         <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Toggle sidebar">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
@@ -91,11 +90,15 @@
       </div>
 
       <div class="top-bar-right">
+        <!-- NotebookLM Intelligence Badge -->
+        <div class="nlm-badge" id="nlmBadge" title="NotebookLM-style Problem→Analogy→Solution intelligence active">
+          <span class="nlm-dot"></span>
+          <span>P→A→S Intelligence</span>
+        </div>
         <div class="top-model-badge" id="topModelBadge">
           <span class="pulse-dot-small"></span>
           <span id="topModelName">Groq (Llama 3.3)</span>
         </div>
-        <!-- Light / Dark Mode Toggle Button -->
         <button class="top-action-btn theme-toggle-btn" id="themeToggleBtn" title="Toggle Light / Dark Mode">
           <svg class="theme-icon-sun" id="themeIconSun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
           <svg class="theme-icon-moon" id="themeIconMoon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -112,33 +115,117 @@
     <div class="chat-scroll-area" id="chatScrollArea">
       <div class="chat-thread" id="chatThread">
 
-        <!-- Welcome Hero: Bigger Logo and Prominent "What do you want to learn?" Title -->
+        <!-- Welcome Hero -->
         <div class="welcome-hero" id="welcomeHero">
           <div class="hero-logo-wrap">
             <img src="/static/img/main_logo.png" alt="VisuAIze Logo" class="hero-main-logo"/>
           </div>
           <h1 class="hero-title">What do you want to learn?</h1>
+
+          <!-- NotebookLM Intelligence Banner -->
+          <div class="nlm-intelligence-banner">
+            <div class="nlm-arc-pill">
+              <span class="arc-dot problem"></span>
+              <span>Problem</span>
+              <span class="arc-arrow">→</span>
+              <span class="arc-dot analogy"></span>
+              <span>Analogy</span>
+              <span class="arc-arrow">→</span>
+              <span class="arc-dot solution"></span>
+              <span>Solution</span>
+            </div>
+            <span class="nlm-banner-label">NotebookLM-Style Intelligence</span>
+          </div>
+
           <div class="hero-input-slot" id="heroInputSlot"></div>
+
+          <!-- ══ VIDEO STYLE PICKER ══ -->
+          <div class="style-picker-section" id="stylePickerSection">
+            <div class="style-picker-label">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+              Choose Video Style
+            </div>
+            <div class="style-cards-grid" id="styleCardsGrid" role="radiogroup" aria-label="Video style selector">
+
+              <button type="button" class="style-card active" id="style-classic" data-style="classic" onclick="selectStyle('classic')" title="Classic — Dark cinematic with glowing accents">
+                <div class="style-card-icon">🎬</div>
+                <div class="style-card-name">Classic</div>
+                <div class="style-card-desc">Dark cinematic</div>
+              </button>
+
+              <button type="button" class="style-card" id="style-whiteboard" data-style="whiteboard" onclick="selectStyle('whiteboard')" title="Whiteboard — Clean educational marker-drawing style">
+                <div class="style-card-icon">📋</div>
+                <div class="style-card-name">Whiteboard</div>
+                <div class="style-card-desc">Hand-drawn feel</div>
+              </button>
+
+              <button type="button" class="style-card" id="style-kawaii" data-style="kawaii" onclick="selectStyle('kawaii')" title="Kawaii — Cute pastel anime style">
+                <div class="style-card-icon">🌸</div>
+                <div class="style-card-name">Kawaii</div>
+                <div class="style-card-desc">Pastel anime</div>
+              </button>
+
+              <button type="button" class="style-card" id="style-watercolor" data-style="watercolor" onclick="selectStyle('watercolor')" title="Watercolor — Soft artistic watercolor washes">
+                <div class="style-card-icon">🎨</div>
+                <div class="style-card-name">Watercolor</div>
+                <div class="style-card-desc">Soft art washes</div>
+              </button>
+
+              <button type="button" class="style-card" id="style-papercraft" data-style="papercraft" onclick="selectStyle('papercraft')" title="Papercraft — Cut-paper flat design look">
+                <div class="style-card-icon">✂️</div>
+                <div class="style-card-name">Papercraft</div>
+                <div class="style-card-desc">Cut-paper design</div>
+              </button>
+
+              <button type="button" class="style-card" id="style-retro_print" data-style="retro_print" onclick="selectStyle('retro_print')" title="Retro Print — Vintage halftone newspaper style">
+                <div class="style-card-icon">📰</div>
+                <div class="style-card-name">Retro Print</div>
+                <div class="style-card-desc">Vintage halftone</div>
+              </button>
+
+              <button type="button" class="style-card" id="style-heritage" data-style="heritage" onclick="selectStyle('heritage')" title="Heritage — Deep mahogany classical look">
+                <div class="style-card-icon">🏛️</div>
+                <div class="style-card-name">Heritage</div>
+                <div class="style-card-desc">Classical gold</div>
+              </button>
+
+            </div>
+          </div>
+          <!-- END STYLE PICKER -->
+
+          <!-- Dual Voice Toggle -->
+          <div class="dual-voice-toggle-row">
+            <label class="dual-voice-toggle" id="dualVoiceToggle" title="Enable Teacher + Student dual-speaker narration (NotebookLM style)">
+              <input type="checkbox" id="dualVoiceCheckbox" checked/>
+              <span class="toggle-slider"></span>
+              <span class="toggle-label">
+                🎙️ Dual-Voice Narration <span class="toggle-badge">NotebookLM</span>
+              </span>
+            </label>
+          </div>
+
           <div class="hero-pill-suggestions">
             <button type="button" class="hero-pill" onclick="fillPrompt('How does the human heart pump blood?')">🫀 Heart Function</button>
             <button type="button" class="hero-pill" onclick="fillPrompt('Explain photosynthesis step by step')">🌿 Photosynthesis</button>
             <button type="button" class="hero-pill" onclick="fillPrompt('How to tie a tie knot step by step')">👔 Tie Knot</button>
-            <button type="button" class="hero-pill" onclick="fillPrompt('How do I change a flat tyre?')">🚗 Flat Tyre</button>
-            <button type="button" class="hero-pill" onclick="fillPrompt('Explain machine learning for beginners')">🤖 AI & ML</button>
+            <button type="button" class="hero-pill" onclick="fillPrompt('How does machine learning work?')">🤖 AI &amp; ML</button>
+            <button type="button" class="hero-pill" onclick="fillPrompt('Explain gravity and black holes')">🌑 Gravity</button>
           </div>
         </div>
 
-        <!-- Dynamic Chat Messages will be appended here -->
+        <!-- Dynamic Chat Messages -->
         <div class="messages-container" id="messagesContainer"></div>
 
       </div>
     </div>
 
-    <!-- ══════════════════════════ CLAUDE FLOATING INPUT BAR ══════════════════════════ -->
+    <!-- ══════════════════════════ FLOATING INPUT BAR ══════════════════════════ -->
     <div class="input-bar-container" id="inputBarContainer">
       <div class="floating-input-card" id="floatingInputCard">
         <form id="chatForm" enctype="multipart/form-data">
           <input type="hidden" name="provider" id="providerInput" value="groq"/>
+          <input type="hidden" name="style" id="styleInput" value="classic"/>
+          <input type="hidden" name="dual_voice" id="dualVoiceInput" value="true"/>
 
           <!-- Attached Image Preview Strip -->
           <div class="attached-preview-wrap" id="attachedPreviewWrap" style="display:none">
@@ -152,13 +239,21 @@
             </div>
           </div>
 
+          <!-- Active Style Badge (shown in input bar when style is selected) -->
+          <div class="active-style-bar" id="activeStyleBar">
+            <span class="active-style-icon" id="activeStyleIcon">🎬</span>
+            <span class="active-style-name" id="activeStyleName">Classic</span>
+            <span class="active-style-sep">·</span>
+            <span class="active-voice-label" id="activeVoiceLabel">🎙️ Dual Voice</span>
+          </div>
+
           <!-- Main Input Textarea -->
           <div class="input-textarea-row">
             <textarea
               id="promptTextarea"
               name="question"
               class="prompt-textarea"
-              placeholder="Reply to VisuAIze or describe a new video tutorial..."
+              placeholder="Ask anything to create a NotebookLM-style video tutorial..."
               rows="1"
               required
             ></textarea>
@@ -174,7 +269,7 @@
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
               </label>
 
-              <!-- Claude Style Model Dropdown (5 Models: Groq, Gemini, Llama 3.1, Mistral, Ollama) -->
+              <!-- Model Dropdown -->
               <div class="model-dropdown-container" id="modelDropdownContainer">
                 <button type="button" class="model-select-btn" id="modelSelectBtn">
                   <span class="model-name-text" id="selectedModelLabel">Groq</span>
@@ -182,11 +277,9 @@
                   <svg class="dropdown-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
                 </button>
 
-                <!-- Popover Menu -->
                 <div class="model-popover" id="modelPopover">
                   <div class="popover-header">Choose AI Model</div>
 
-                  <!-- 1. Groq -->
                   <div class="model-option-item active" data-provider="groq">
                     <div class="model-opt-main">
                       <div class="model-opt-title">
@@ -198,19 +291,17 @@
                     <span class="check-icon" id="check-groq">✓</span>
                   </div>
 
-                  <!-- 2. Google Gemini -->
                   <div class="model-option-item" data-provider="gemini">
                     <div class="model-opt-main">
                       <div class="model-opt-title">
                         <span>Google Gemini</span>
                         <span class="opt-tag pro">Pro</span>
                       </div>
-                      <div class="model-opt-desc">Gemini 2.0 Flash · Deep reasoning & rich visuals</div>
+                      <div class="model-opt-desc">Gemini 2.0 Flash · Deep reasoning &amp; rich visuals</div>
                     </div>
                     <span class="check-icon" id="check-gemini"></span>
                   </div>
 
-                  <!-- 3. Llama 3.1 -->
                   <div class="model-option-item" data-provider="llama31">
                     <div class="model-opt-main">
                       <div class="model-opt-title">
@@ -222,19 +313,17 @@
                     <span class="check-icon" id="check-llama31"></span>
                   </div>
 
-                  <!-- 4. Mistral -->
                   <div class="model-option-item" data-provider="mistral">
                     <div class="model-opt-main">
                       <div class="model-opt-title">
                         <span>Mistral</span>
                         <span class="opt-tag fast">Smart</span>
                       </div>
-                      <div class="model-opt-desc">Mistral 7B & NeMo Instruct</div>
+                      <div class="model-opt-desc">Mistral 7B &amp; NeMo Instruct</div>
                     </div>
                     <span class="check-icon" id="check-mistral"></span>
                   </div>
 
-                  <!-- 5. Ollama -->
                   <div class="model-option-item" data-provider="ollama">
                     <div class="model-opt-main">
                       <div class="model-opt-title">
@@ -250,14 +339,14 @@
 
             </div>
 
-            <!-- Toolbar Right (Mic + Send Button) -->
+            <!-- Toolbar Right -->
             <div class="toolbar-right">
               <button type="button" class="toolbar-btn mic-btn" id="micBtn" title="Click to speak (Voice Input)">
                 <svg class="mic-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
                 <span class="recording-pulse" id="recordingPulse"></span>
               </button>
 
-              <button type="submit" class="send-action-btn" id="sendActionBtn" disabled title="Send prompt">
+              <button type="submit" class="send-action-btn" id="sendActionBtn" disabled title="Generate NotebookLM video">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
               </button>
             </div>
@@ -265,9 +354,8 @@
         </form>
       </div>
 
-      <!-- Disclaimer Note -->
       <div class="input-footer-note">
-        VisuAIze turns complex tangled thoughts into clear, step-by-step 1080p visual videos.
+        VisuAIze uses NotebookLM-style Problem→Analogy→Solution intelligence to create human-understandable tutorial videos.
       </div>
     </div>
 
@@ -284,28 +372,20 @@
     </div>
     <div class="share-modal-body">
       <p class="share-modal-desc">Share this step-by-step AI video with friends or social networks:</p>
-      
       <div class="share-link-input-row">
         <input type="text" id="shareLinkInput" readonly value="http://127.0.0.1:5000"/>
         <button class="btn-copy-link" id="copyShareLinkBtn">Copy</button>
       </div>
-
       <div class="share-social-grid">
-        <a href="#" class="social-share-btn whatsapp" id="shareWhatsapp" target="_blank">
-          <span>💬 WhatsApp</span>
-        </a>
-        <a href="#" class="social-share-btn twitter" id="shareTwitter" target="_blank">
-          <span>𝕏 Twitter</span>
-        </a>
-        <a href="#" class="social-share-btn telegram" id="shareTelegram" target="_blank">
-          <span>✈ Telegram</span>
-        </a>
+        <a href="#" class="social-share-btn whatsapp" id="shareWhatsapp" target="_blank"><span>💬 WhatsApp</span></a>
+        <a href="#" class="social-share-btn twitter" id="shareTwitter" target="_blank"><span>𝕏 Twitter</span></a>
+        <a href="#" class="social-share-btn telegram" id="shareTelegram" target="_blank"><span>✈ Telegram</span></a>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ══════════════════════════ HOTSPOT INSPECTION MODAL ══════════════════════════ -->
+<!-- ══════════════════════════ HOTSPOT MODAL ══════════════════════════ -->
 <div class="hotspot-inspection-modal-backdrop" id="hotspotModalBackdrop">
   <div class="hotspot-inspection-modal">
     <div class="inspection-modal-header">
@@ -334,7 +414,6 @@
   </div>
 </div>
 
-<script src="/static/js/app.js?v=15"></script>
+<script src="/static/js/app.js?v=20"></script>
 </body>
 </html>
-

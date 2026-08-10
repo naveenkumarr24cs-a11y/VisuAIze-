@@ -2543,3 +2543,323 @@ html, body {
   font-size: 12px;
 }
 
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   NotebookLM Intelligence UI — P→A→S Banner, Style Picker, Dual Voice
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── P→A→S Intelligence Banner ─────────────────────────────────────────────── */
+.nlm-intelligence-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px auto 4px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.nlm-arc-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.28);
+  border-radius: 100px;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  backdrop-filter: blur(6px);
+}
+
+.arc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.arc-dot.problem  { background: #ef4444; box-shadow: 0 0 6px rgba(239,68,68,0.6); }
+.arc-dot.analogy  { background: #f59e0b; box-shadow: 0 0 6px rgba(245,158,11,0.6); }
+.arc-dot.solution { background: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,0.6); }
+
+.arc-arrow {
+  color: rgba(255,255,255,0.3);
+  font-size: 11px;
+}
+
+.nlm-banner-label {
+  font-size: 10px;
+  color: rgba(99, 102, 241, 0.7);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ── NLM Badge in Top Bar ───────────────────────────────────────────────────── */
+.nlm-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(165, 167, 245, 0.9);
+  cursor: default;
+  white-space: nowrap;
+}
+.nlm-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #818cf8;
+  animation: pulse-nlm 1.8s ease-in-out infinite;
+}
+@keyframes pulse-nlm {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+/* ── Style Picker Section ───────────────────────────────────────────────────── */
+.style-picker-section {
+  width: 100%;
+  max-width: 660px;
+  margin: 16px auto 4px;
+}
+
+.style-picker-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+}
+
+.style-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+@media (max-width: 680px) {
+  .style-cards-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+@media (max-width: 420px) {
+  .style-cards-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.style-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px 8px;
+  background: var(--bg-glass-card);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  font-family: inherit;
+  color: var(--text-muted);
+}
+
+.style-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.style-card:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-glass-hover);
+  transform: translateY(-2px);
+  color: var(--text-primary);
+}
+.style-card:hover::before { opacity: 1; }
+
+.style-card.active {
+  border-color: rgba(99, 102, 241, 0.7);
+  background: rgba(99, 102, 241, 0.12);
+  box-shadow: 0 0 0 1px rgba(99,102,241,0.3), 0 4px 16px rgba(99,102,241,0.15);
+  color: var(--text-primary);
+}
+.style-card.active::after {
+  content: '✓';
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(99,102,241,0.9);
+}
+
+.style-card-icon {
+  font-size: 20px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+}
+
+.style-card-name {
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+}
+
+.style-card-desc {
+  font-size: 8.5px;
+  font-weight: 400;
+  text-align: center;
+  opacity: 0.6;
+  line-height: 1.2;
+}
+
+/* ── Dual Voice Toggle Row ──────────────────────────────────────────────────── */
+.dual-voice-toggle-row {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0 6px;
+}
+
+.dual-voice-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.dual-voice-toggle input[type="checkbox"] {
+  display: none;
+}
+
+.toggle-slider {
+  width: 36px;
+  height: 20px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 100px;
+  position: relative;
+  transition: background 0.25s ease;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  flex-shrink: 0;
+}
+
+.toggle-slider::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: rgba(255,255,255,0.5);
+  border-radius: 50%;
+  transition: transform 0.25s ease, background 0.25s ease;
+}
+
+.dual-voice-toggle input:checked + .toggle-slider {
+  background: rgba(99, 102, 241, 0.5);
+  border-color: rgba(99, 102, 241, 0.6);
+}
+
+.dual-voice-toggle input:checked + .toggle-slider::after {
+  transform: translateX(16px);
+  background: white;
+}
+
+.toggle-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toggle-badge {
+  font-size: 9px;
+  padding: 1px 6px;
+  background: rgba(99,102,241,0.15);
+  border: 1px solid rgba(99,102,241,0.25);
+  border-radius: 100px;
+  color: rgba(165,167,245,0.85);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+/* ── Active Style Bar (inside input card) ───────────────────────────────────── */
+.active-style-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+  margin-bottom: 2px;
+}
+
+.active-style-icon { font-size: 14px; }
+.active-style-name { color: var(--text-secondary); }
+.active-style-sep  { opacity: 0.3; }
+.active-voice-label { color: rgba(99, 102, 241, 0.8); font-size: 11px; }
+
+/* Light theme overrides for new elements */
+[data-theme="light"] .nlm-arc-pill {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.2);
+  color: #4b5563;
+}
+
+[data-theme="light"] .style-card {
+  background: rgba(255,255,255,0.85);
+  border-color: rgba(0,0,0,0.1);
+  color: #4b5563;
+}
+
+[data-theme="light"] .style-card:hover {
+  background: rgba(255,255,255,0.95);
+  border-color: rgba(99, 102, 241, 0.3);
+  color: #1f2937;
+}
+
+[data-theme="light"] .style-card.active {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.5);
+  color: #1f2937;
+}
+
+[data-theme="light"] .nlm-badge {
+  background: rgba(99, 102, 241, 0.07);
+  color: #6366f1;
+}
+
+[data-theme="light"] .toggle-slider {
+  background: rgba(0,0,0,0.1);
+  border-color: rgba(0,0,0,0.15);
+}
+
+[data-theme="light"] .toggle-label { color: #6b7280; }
+[data-theme="light"] .toggle-badge {
+  background: rgba(99,102,241,0.1);
+  color: #6366f1;
+}
+
