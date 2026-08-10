@@ -1097,14 +1097,13 @@ chatForm.addEventListener('submit', async (e) => {
 
 
     if (json.action === 'clarify' || json.action === 'refusal' || !res.ok) {
-      const suggestions = json.suggestions && json.suggestions.length ? json.suggestions : [
-        'How does the human heart work?',
-        'How to make scrambled eggs',
-        'Explain machine learning',
-        'How to tie a tie knot'
-      ];
-
-      const suggHtml = suggestions.map(s => `<button class="refusal-chip" onclick="fillPrompt('${escapeHtml(s).replace(/'/g, "\\'")}')">${escapeHtml(s)}</button>`).join('');
+      const suggestions = (json.suggestions && json.suggestions.length) ? json.suggestions : [];
+      const suggSection = suggestions.length > 0 ? `
+        <p class="refusal-hint">Try one of these options:</p>
+        <div class="refusal-suggestions">
+          ${suggestions.map(s => `<button class="refusal-chip" onclick="fillPrompt('${escapeHtml(s).replace(/'/g, "\\'")}')">${escapeHtml(s)}</button>`).join('')}
+        </div>
+      ` : '';
 
       const errRow = document.createElement('div');
       errRow.className = 'assistant-msg-row';
@@ -1120,11 +1119,8 @@ chatForm.addEventListener('submit', async (e) => {
               </div>
             </div>
             <div class="refusal-text">
-              <p class="refusal-reason">${escapeHtml(json.question || json.error || json.message || "I can't create a tutorial for that.")}</p>
-              <p class="refusal-hint">Try one of these options:</p>
-              <div class="refusal-suggestions">
-                ${suggHtml}
-              </div>
+              <p class="refusal-reason">${escapeHtml(json.question || json.error || json.message || "Please provide a topic or question to visualize.")}</p>
+              ${suggSection}
             </div>
           </div>
         </div>

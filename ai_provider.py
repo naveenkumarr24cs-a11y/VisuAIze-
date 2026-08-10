@@ -612,6 +612,75 @@ def _generate_ollama(question: str, image_path: str = None) -> list:
     return _clean_json(content)
 
 
+_VALIDATION_SYSTEM = (
+    "You are the input validator for VisuAIze, an AI step-by-step tutorial video generator.\n\n"
+    "Your job: determine if the user input is a valid topic for an educational step-by-step tutorial video.\n\n"
+    "VALID: How-to questions, concepts to explain, skills to teach, processes, problem solving, any real learnable topic.\n"
+    "INVALID: Random letters (A or B or C), filler words (Hello, Hi, OK, Yes, No, test), gibberish (asdf, 1234), pure symbols.\n\n"
+    "When valid, also refine the phrasing if needed (e.g. 'java' -> 'Java Programming Fundamentals').\n\n"
+    'Respond ONLY with JSON, no markdown:\n'
+    '{"valid": true, "reason": "", "refined_topic": "<improved or original topic>"}\n'
+    'or\n'
+    '{"valid": false, "reason": "<friendly explanation + example prompt>", "refined_topic": ""}'
+)
+
+
+def _parse_json_obj(raw: str) -> dict:
+    """Extract a JSON object from raw LLM text."""
+    import re as _re, json as _json
+    text = raw.strip()
+    text = _re.sub(r"^```(?:json)?\s*", "", text)
+    text = _re.sub(r"\s*```$", "", text)
+    start = text.find("{")
+    end   = text.rfind("}")
+    if start != -1 and end != -1:
+        text = text[start:end + 1]
+    return _json.loads(text)
+
+
+def _local_validate(question: str):
+    """Fast local validation. Returns result dict if clearly invalid, else None."""
+    q = question.strip()
+    q_lower = q.lower()
+    
+    # Valid short technical terms
+    if q_lower in ("ai", "ml", "dl", "c", "c++", "go", "js", "ts", "py", "sql", "git", "vr", "ar", "ui", "ux", "3d", "db", "os", "api"):
+        return None
+
+    if len(q) < 2:
+        return {
+            "valid": False,
+            "reason": "Please enter a topic or problem statement to visualize.",
+            "refined_topic": "",
+        }
+    words = q.split()
+    # Pure greetings / filler words
+    _fillers = {"hello", "hi", "hey", "ok", "okay", "yes", "no", "test",
+                "testing", "check", "ping", "sup", "yo", "hola", "greetings"}
+    if len(words) <= 2 and all(w.lower().strip("!?.") in _fillers for w in words):
+        return {
+            "valid": False,
+            "reason": f"'{q}' is a greeting. Describe what concept or problem you'd like to learn!",
+            "refined_topic": "",
+        }
+    # Pure symbols / numbers
+    if not any(c.isalpha() for c in q):
+        return {
+            "valid": False,
+            "reason": "Please describe a real topic or question (e.g. 'How do neural networks work?').",
+            "refined_topic": "",
+        }
+    # Gibberish: very high ratio of non-alphabetic chars
+    alpha_ratio = sum(c.isalpha() for c in q) / max(len(q), 1)
+    if alpha_ratio < 0.35 and len(q) > 6:
+        return {
+            "valid": False,
+            "reason": "That input looks like random characters. Please describe a learning topic.",
+            "refined_topic": "",
+        }
+    return None   # uncertain — let AI decide
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # DISPATCHER
 # ─────────────────────────────────────────────────────────────────────────────
@@ -657,80 +726,6 @@ def list_providers() -> dict:
         "mistral": {"name": "Mistral", "desc": "Mistral 7B & NeMo Instruct", "tag": "Smart"},
         "ollama": {"name": "Ollama Local", "desc": "100% Offline on your PC", "tag": "Offline"},
     }
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# PROMPT VALIDATION  (Claude / ChatGPT style input intelligence)
-# ─────────────────────────────────────────────────────────────────────────────
-
-_VALIDATION_SYSTEM = (
-    "You are the input validator for VisuAIze, an AI step-by-step tutorial video generator.\n\n"
-    "Your job: determine if the user input is a valid topic for an educational step-by-step tutorial video.\n\n"
-    "VALID: How-to questions, concepts to explain, skills to teach, processes, problem solving, any real learnable topic.\n"
-    "INVALID: Random letters (A or B or C), filler words (Hello, Hi, OK, Yes, No, test), gibberish (asdf, 1234), pure symbols.\n\n"
-    "When valid, also refine the phrasing if needed (e.g. 'eggs' -> 'How to boil an egg perfectly').\n\n"
-    'Respond ONLY with JSON, no markdown:\n'
-    '{"valid": true, "reason": "", "refined_topic": "<improved or original topic>"}\n'
-    'or\n'
-    '{"valid": false, "reason": "<friendly explanation + example prompt>", "refined_topic": ""}'
-)
-
-
-def _parse_json_obj(raw: str) -> dict:
-    """Extract a JSON object from raw LLM text."""
-    import re as _re, json as _json
-    text = raw.strip()
-    text = _re.sub(r"^```(?:json)?\s*", "", text)
-    text = _re.sub(r"\s*```$", "", text)
-    start = text.find("{")
-    end   = text.rfind("}")
-    if start != -1 and end != -1:
-        text = text[start:end + 1]
-    return _json.loads(text)
-
-
-def _local_validate(question: str):
-    """Fast local validation. Returns result dict if clearly invalid, else None."""
-    q = question.strip()
-    if len(q) < 4:
-        return {
-            "valid": False,
-            "reason": "That's too short. Try something like: 'How does photosynthesis work?' or 'How to change a car tyre'.",
-            "refined_topic": "",
-        }
-    words = q.split()
-    # All short tokens (e.g. "A or B or C", "x y z")
-    if len(words) >= 2 and all(len(w) <= 2 for w in words if w.isalpha()):
-        return {
-            "valid": False,
-            "reason": "That doesn't look like a tutorial topic. Try: 'How to make scrambled eggs' or 'Explain machine learning'.",
-            "refined_topic": "",
-        }
-    # Pure greetings / filler words
-    _fillers = {"hello", "hi", "hey", "ok", "okay", "yes", "no", "test",
-                "testing", "check", "ping", "sup", "yo", "hola", "greetings"}
-    if len(words) <= 2 and all(w.lower().strip("!?.") in _fillers for w in words):
-        return {
-            "valid": False,
-            "reason": f"'{q}' is a greeting, not a tutorial topic. Try: 'How does a computer processor work?' or 'How to tie a tie knot'.",
-            "refined_topic": "",
-        }
-    # Pure symbols / numbers
-    if not any(c.isalpha() for c in q):
-        return {
-            "valid": False,
-            "reason": "Please describe a real topic or question. Example: 'How to fix a leaking pipe'",
-            "refined_topic": "",
-        }
-    # Gibberish: very high ratio of non-alphabetic chars
-    alpha_ratio = sum(c.isalpha() for c in q) / max(len(q), 1)
-    if alpha_ratio < 0.4:
-        return {
-            "valid": False,
-            "reason": "That input looks like gibberish. Please describe a real learning topic.",
-            "refined_topic": "",
-        }
-    return None   # uncertain — let AI decide
 
 
 def validate_prompt(question: str) -> dict:

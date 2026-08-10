@@ -22,17 +22,18 @@ INTENT_SYSTEM_PROMPT = """You are the Lead Intelligence Orchestrator for VisuAIz
 Analyze the user input and conversation history, then return ONLY a valid JSON object (no markdown, no extra text).
 
 Classify into EXACTLY ONE intent:
-1. "NEW_VIDEO": User wants to create a new step-by-step visual video tutorial on a clear topic.
-2. "MODIFY_VIDEO": User wants to modify an existing video (e.g. "make it shorter", "change background", "more realistic").
+1. "NEW_VIDEO": User wants to create a video tutorial, learn something, solve a problem, or explore ANY topic/concept/subject (e.g. "how to study", "Java", "Python", "quantum physics", "how does a turbocharger work", "calculus", "machine learning", "history of Rome", "origami", "how to tie a knot").
+   CRITICAL RULE: Even if the user's input is short or broad (like "Java" or "how to study" or "space"), ALWAYS classify as "NEW_VIDEO". Automatically synthesize a clean, descriptive, and comprehensive tutorial title for "subject" (e.g. "how to study" -> "Effective Study Techniques & Cognitive Learning Strategies"; "Java" -> "Java Programming Fundamentals & Core OOP Concepts"). DO NOT ask for clarification or refuse.
+2. "MODIFY_VIDEO": User wants to modify the previous video (e.g. "make it shorter", "change background", "more realistic", "different style").
 3. "REGENERATE_VIDEO": User wants to re-render the current video with fresh visuals.
-4. "CLARIFY_REQUIRED": Topic is too broad/ambiguous (e.g. "cars", "make a video"). Ask a focused clarification question.
-5. "GENERAL_CONVERSATION": User is chatting, greeting, or asking a non-video question. Answer helpfully.
-6. "REJECT_UNREALISTIC": Pure gibberish, random letters with no meaning. Reject politely with suggestions.
+4. "GENERAL_CONVERSATION": User is chatting, greeting ("hi", "hello"), asking what VisuAIze can do, or having a conversational exchange. Provide a rich, highly intelligent conversational response like ChatGPT / Gemini in "conversation_response".
+5. "CLARIFY_REQUIRED": ONLY for completely empty, single-punctuation, or 1-letter inputs (e.g. "?", "...", "x"). For any real topic, use NEW_VIDEO.
+6. "REJECT_UNREALISTIC": ONLY for pure random keyboard mash (e.g. "asdfghjkl", "12837198273").
 
 Return ONLY this JSON structure:
 {
-  "intent": "NEW_VIDEO|MODIFY_VIDEO|REGENERATE_VIDEO|CLARIFY_REQUIRED|GENERAL_CONVERSATION|REJECT_UNREALISTIC",
-  "subject": "Clean specific title of the video tutorial",
+  "intent": "NEW_VIDEO|MODIFY_VIDEO|REGENERATE_VIDEO|GENERAL_CONVERSATION|CLARIFY_REQUIRED|REJECT_UNREALISTIC",
+  "subject": "Clean specific comprehensive title of the video tutorial",
   "style": "Visual style (e.g. photorealistic cinematic 3D, futuristic sci-fi, documentary)",
   "tone": "Narration tone (e.g. clear and educational, fast-paced, calm professional)",
   "scene": "Environment setting (e.g. inside the human body, space station, chemistry lab)",
@@ -49,8 +50,8 @@ Return ONLY this JSON structure:
 CRITICAL RULES:
 - "hi", "hello", "hey", "hii" MUST be GENERAL_CONVERSATION with a friendly helpful response
 - "make it shorter", "change background", "more realistic" MUST be MODIFY_VIDEO
-- Only reject truly random gibberish with no meaning
-- Single-word topics like "photosynthesis", "gravity" = NEW_VIDEO (they are clear enough)
+- ANY instructional, educational, problem-solving, or subject prompt MUST be NEW_VIDEO
+- Never return empty or generic suggestions; if suggestions are needed, make them directly relevant to the user's topic
 """
 
 
@@ -130,33 +131,56 @@ def _local_heuristics_classifier(
     q_lower = q.lower()
     words = q.split()
 
+    # Short topic acronyms that should immediately be NEW_VIDEO
+    short_acronyms = {
+        "ai": "Artificial Intelligence Fundamentals & How It Works",
+        "ml": "Machine Learning Core Concepts & Algorithms",
+        "dl": "Deep Learning & Neural Network Architecture",
+        "c": "C Programming Language Fundamentals",
+        "c++": "C++ Object-Oriented Programming & STL",
+        "go": "Golang Programming Language Essentials",
+        "js": "JavaScript Essentials & Modern Web Concepts",
+        "ts": "TypeScript Fundamentals & Static Typing",
+        "py": "Python Programming for Beginners & Core Syntax",
+        "sql": "SQL Database Queries, Joins & Optimization",
+        "git": "Git Version Control & Branching Strategies",
+        "vr": "Virtual Reality (VR) Technology & Headsets",
+        "ar": "Augmented Reality (AR) Principles & Applications",
+        "ui": "User Interface (UI) Design Principles & Layouts",
+        "ux": "User Experience (UX) Research & User Journey Design",
+        "3d": "3D Modeling, Rendering & Spatial Graphics",
+        "os": "Operating Systems: Kernel, Memory & Process Scheduling",
+        "db": "Database Systems: Relational vs NoSQL Architecture",
+        "api": "REST & GraphQL APIs: How Web Services Communicate",
+        "tcp": "TCP/IP Networking: Handshakes, Packets & Protocols",
+        "dns": "How Domain Name System (DNS) Resolves Internet Addresses",
+        "http": "How the HTTP & HTTPS Protocols Work Across the Web",
+        "cpu": "How a Computer CPU Executes Machine Instructions",
+        "gpu": "Graphics Processing Units (GPUs) & Parallel Compute Architecture",
+        "ram": "Computer Memory (RAM): Architecture, Registers & Cache Hierarchy",
+        "ssd": "How Solid State Drives (SSDs) & NAND Flash Memory Work"
+    }
+
+    if q_lower in short_acronyms:
+        return _default_spec(short_acronyms[q_lower], "NEW_VIDEO")
+
     # Greetings
     greetings = ["hi", "hello", "hey", "hii", "helo", "hiya", "howdy", "sup", "yo",
                  "good morning", "good evening", "good afternoon", "namaste", "greetings"]
     q_stripped = q_lower.rstrip("!").rstrip(".").strip()
     if q_stripped in greetings or q_lower in greetings:
         return _default_spec(q, "GENERAL_CONVERSATION",
-            "Hello! I am **VisuAIze** - your AI cinematic video tutorial creator!\n\n"
-            "I turn any topic or question into a **photorealistic, cinematic step-by-step video** "
-            "with professional narration, Ken Burns camera motion, and smooth transitions.\n\n"
-            "**Try asking:**\n"
-            "- *How does the human heart pump blood?*\n"
-            "- *Explain how a car engine works*\n"
-            "- *How to tie a tie knot*\n"
-            "- *What is machine learning?*\n\n"
-            "What topic would you like to visualize today?")
+            "Hello! I am **VisuAIze** - your AI cinematic step-by-step video tutorial platform!\n\n"
+            "I turn **any topic, question, or problem statement** into a full step-by-step video tutorial with dual neural narration, visual diagrams, and interactive learning checkpoints.\n\n"
+            "You can ask me to visualize anything: programming languages, science, engineering, life skills, mathematics, or everyday problems. What would you like to learn today?")
 
-    # Too short
-    if len(q) < 3:
+    # Too short / empty
+    if len(q) < 2:
         return _default_spec(q, "REJECT_UNREALISTIC")
 
-    # Pure gibberish
-    if len(words) >= 2 and all(len(w) <= 2 for w in words if w.isalpha()):
-        return {**_default_spec(q, "REJECT_UNREALISTIC"),
-                "suggestions": ["How does the human heart work?",
-                                "How to make scrambled eggs",
-                                "How to tie a tie knot",
-                                "Explain machine learning"]}
+    # Pure random gibberish (non-vowel letter mash)
+    if len(q) > 6 and not any(v in q_lower for v in "aeiouy"):
+        return _default_spec(q, "REJECT_UNREALISTIC")
 
     # Platform questions about VisuAIze itself
     platform_q = ["what is visuaize", "how does visuaize work", "what can you do",
@@ -164,11 +188,11 @@ def _local_heuristics_classifier(
     if any(pt in q_lower for pt in platform_q):
         return _default_spec(q, "GENERAL_CONVERSATION",
             "**VisuAIze** is an AI cinematic tutorial platform powered by:\n\n"
-            "- **AI Script Engine**: Groq Llama 3.3 / Gemini 2.0 Flash\n"
-            "- **Visual Engine**: HuggingFace SD3 Medium + Pollinations Flux\n"
-            "- **Voice Engine**: gTTS with audio-sync narration\n"
-            "- **Video Engine**: Ken Burns motion + cinematic transitions + H.264\n\n"
-            "Just describe any topic and I will create a cinematic tutorial video!")
+            "- **Pedagogical AI Engine**: Structured Problem-Analogy-Solution curriculum synthesis\n"
+            "- **Dual Neural Voice Engine**: Microsoft Edge dual-host conversational narration\n"
+            "- **Visual Slide & Diagram Engine**: 3D kinetic visuals and schematic node diagrams\n"
+            "- **Video Assembler Engine**: Fast H.264 video rendering with Ken Burns camera motion\n\n"
+            "Just describe any concept, skill, or problem, and I will generate the complete step-by-step video tutorial!")
 
     # Modification follow-up (requires history context)
     mod_triggers = ["make it", "change the", "add a step", "remove step", "faster", "slower",
@@ -216,7 +240,7 @@ def _classify_with_groq(question: str, history: Optional[List[Dict[str, Any]]]) 
                 {"role": "user", "content": prompt}
             ],
             temperature=0.1,
-            max_tokens=500
+            max_tokens=600
         )
         return _clean_json_obj(resp.choices[0].message.content)
     except Exception as e:
@@ -225,21 +249,25 @@ def _classify_with_groq(question: str, history: Optional[List[Dict[str, Any]]]) 
 
 
 def _classify_with_gemini(question: str, history: Optional[List[Dict[str, Any]]]) -> Optional[Dict[str, Any]]:
-    """Fallback: Intent Classification via Google Gemini 2.0 Flash."""
+    """Fallback: Intent Classification via Google Gemini (google-genai SDK)."""
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         return None
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-2.0-flash-exp")
+        from google import genai
+        client = genai.Client(api_key=api_key)
         prompt = _build_user_prompt(question, history)
         full = f"{INTENT_SYSTEM_PROMPT}\n\n{prompt}"
-        resp = model.generate_content(full)
-        return _clean_json_obj(resp.text)
+        for model_name in ["gemini-2.0-flash", "gemini-1.5-flash"]:
+            try:
+                resp = client.models.generate_content(model=model_name, contents=[full])
+                if resp and resp.text:
+                    return _clean_json_obj(resp.text)
+            except Exception:
+                continue
     except Exception as e:
         print(f"[IntentEngine/Gemini] {e}")
-        return None
+    return None
 
 
 def _apply_spec_defaults(spec: Dict[str, Any], question: str):
@@ -255,6 +283,16 @@ def _apply_spec_defaults(spec: Dict[str, Any], question: str):
     spec.setdefault("conversation_response", "")
     spec.setdefault("suggestions", [])
     spec["complexity"] = normalize_complexity(spec.get("complexity") or question)
+
+    # Auto-promotion: Never block valid user topic queries with CLARIFY_REQUIRED
+    if spec.get("intent") == "CLARIFY_REQUIRED":
+        q_clean = question.strip()
+        if len(q_clean) >= 2 and not all(c in "?!.,- " for c in q_clean):
+            spec["intent"] = "NEW_VIDEO"
+            if not spec.get("subject") or spec["subject"].lower() in ("video", "tutorial"):
+                spec["subject"] = f"Complete Guide: {q_clean.title()}"
+            print(f"[IntentEngine] Auto-promoted CLARIFY_REQUIRED -> NEW_VIDEO ('{spec['subject']}')")
+
     if spec.get("intent") in ("NEW_VIDEO", "MODIFY_VIDEO", "REGENERATE_VIDEO"):
         try:
             val = int(spec.get("num_steps") or 5)
@@ -280,11 +318,12 @@ def _resolve_modification_context(spec: Dict[str, Any], question: str, history: 
 
 def analyze_intent_and_context(
     question: str,
-    history: Optional[List[Dict[str, Any]]] = None
+    history: Optional[List[Dict[str, Any]]] = None,
+    provider: str = "groq"
 ) -> Dict[str, Any]:
     """
     Main entry point - implements all 4 architecture features:
-      1. Intent Classification  -> classify into 6 intents
+      1. Intent Classification  -> classify into intents with multi-provider fallback
       2. Context Management     -> resolve follow-up against history
       3. Structured Output      -> return full JSON video spec
       4. Orchestration Ready    -> spec["intent"] drives server.py
@@ -295,13 +334,23 @@ def analyze_intent_and_context(
         _apply_spec_defaults(local_result, question)
         return local_result
 
-    # Feature 1b: LLM classification (Groq first, Gemini fallback)
-    spec = _classify_with_groq(question, history)
-    if spec is None:
+    # Feature 1b: LLM classification routed by requested provider
+    spec = None
+    prov = (provider or "groq").lower()
+
+    if prov == "gemini":
         spec = _classify_with_gemini(question, history)
+        if spec is None:
+            spec = _classify_with_groq(question, history)
+    else:
+        spec = _classify_with_groq(question, history)
+        if spec is None:
+            spec = _classify_with_gemini(question, history)
+
     if spec is None:
         print("[IntentEngine] All classifiers failed - defaulting to NEW_VIDEO")
-        return _default_spec(question, "NEW_VIDEO")
+        clean_subj = question.strip().title() if len(question.strip()) > 3 else "Visual Learning Tutorial"
+        return _default_spec(clean_subj, "NEW_VIDEO")
 
     # Feature 3: Validate structured output
     _apply_spec_defaults(spec, question)

@@ -278,10 +278,10 @@ def api_generate():
     # Build conversation context: include last 5 sessions for follow-up understanding
     context_history = history[:5] if history else []
 
-    spec = analyze_intent_and_context(question, context_history)
+    spec = analyze_intent_and_context(question, context_history, provider=provider)
 
     intent = spec.get("intent", "NEW_VIDEO")
-    print(f"[Orchestration] Intent: {intent} | Subject: '{spec.get('subject')}'")
+    print(f"[Orchestration] Intent: {intent} | Subject: '{spec.get('subject')}' | Provider: {provider}")
 
     # ── 2. Context Resolution for Modification Requests ────────────────────
     # If the user says "make it shorter" or "change background", resolve against last session
@@ -304,7 +304,7 @@ def api_generate():
     # ── 2. Orchestration Action Branching ──────────────────────────────────
     if intent == "GENERAL_CONVERSATION":
         session_id = f"chat_{int(time.time() * 1000)}"
-        chat_msg = spec.get("conversation_response", "Hello! How can I assist you today? Do you want to create a new video tutorial or discuss something?")
+        chat_msg = spec.get("conversation_response", "Hello! How can I assist you today? Tell me what topic or problem you'd like to learn or visualize!")
         session_entry = {
             "id": session_id,
             "question": question,
@@ -325,18 +325,33 @@ def api_generate():
         }), 200
 
     if intent == "CLARIFY_REQUIRED":
-        return jsonify({
-            "action": "clarify",
-            "question": spec.get("clarification_question", "Could you clarify what specific topic you'd like to learn?"),
-            "suggestions": spec.get("suggestions", [])
-        }), 200
+        # If user entered any real subject/words, auto-promote to NEW_VIDEO instead of blocking
+        if len(question.strip()) >= 2 and not all(c in "?!.,- " for c in question.strip()):
+            intent = "NEW_VIDEO"
+            spec["intent"] = "NEW_VIDEO"
+            if not spec.get("subject"):
+                spec["subject"] = f"Complete Guide: {question.strip().title()}"
+            print(f"[Orchestration] Auto-promoted CLARIFY_REQUIRED to NEW_VIDEO: '{spec['subject']}'")
+        else:
+            return jsonify({
+                "action": "clarify",
+                "question": spec.get("clarification_question", "What specific topic or problem would you like to visualize?"),
+                "suggestions": spec.get("suggestions", [])
+            }), 200
 
     if intent == "REJECT_UNREALISTIC":
-        return jsonify({
-            "action": "refusal",
-            "error": "That input is not a valid tutorial topic.",
-            "suggestions": spec.get("suggestions", [])
-        }), 422
+        # Only reject if pure meaningless symbols/empty
+        if len(question.strip()) >= 3 and any(c.isalpha() for c in question):
+            intent = "NEW_VIDEO"
+            spec["intent"] = "NEW_VIDEO"
+            spec["subject"] = question.strip().title()
+            print(f"[Orchestration] Overrode REJECT_UNREALISTIC to NEW_VIDEO: '{spec['subject']}'")
+        else:
+            return jsonify({
+                "action": "refusal",
+                "error": "Please enter a concept, topic, or question to create a video tutorial.",
+                "suggestions": spec.get("suggestions", [])
+            }), 422
 
     # Intent: NEW_VIDEO / MODIFY_VIDEO / REGENERATE_VIDEO -> Trigger Video Pipeline
     image_path = None
