@@ -180,8 +180,9 @@ def _run_pipeline(job_id: str, question_or_spec: Any, provider: str, image_path:
              f"Teacher + Student voices for {len(steps) + 2} clips" if dual_voice
              else f"Synthesising {len(steps) + 2} audio clips")
         from voice_generator import generate_all_voices
-        audio_data = generate_all_voices(steps, str(tmp_audio), dual_voice=dual_voice)
+        audio_data = generate_all_voices(steps, str(tmp_audio), topic=question, dual_voice=dual_voice)
         push(3, 4, "✅ Voice narrations ready!", "All audio clips created")
+
 
         # Phase 4 – Animated Video Assembly
         push(4, 4, "🎬 Assembling animated tutorial video...",
