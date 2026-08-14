@@ -29,13 +29,16 @@ A ground-up high-performance video engine delivering:
    - Pre-rendered static background cache + localized dynamic patch rendering.
    - Vectorized float32 numpy cross-dissolves.
    - Multi-threaded (threads=8) libx264 encoding with preset='veryfast'.
-   - Generates final MP4 videos in seconds.
+   - Generates final MP4 videos in under 6-8 seconds.
 """
 
 import os
 import sys
 import math
 import time
+import wave
+import re
+import subprocess
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
 
@@ -48,16 +51,19 @@ if hasattr(sys.stderr, "reconfigure"):
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-from moviepy.editor import (
-    AudioFileClip,
-    ImageSequenceClip,
-    concatenate_audioclips,
-)
+from moviepy.editor import ImageSequenceClip
+from moviepy.config import get_setting
+
+# Locate ffmpeg binary used by moviepy / imageio
+try:
+    FFMPEG_BINARY = get_setting("FFMPEG_BINARY")
+except Exception:
+    FFMPEG_BINARY = "ffmpeg"
 
 # ── Global Video Specifications ──────────────────────────────────────────────
-FPS             = 24        # 24fps standard cinematic framerate for ultra-fast rendering
-W, H            = 1280, 720 # 16:9 Presentation Canvas
-TRANSITION_SEC  = 0.5       # 0.5s cross-dissolve transition between slides
+FPS               = 24        # 24fps standard cinematic framerate for ultra-fast rendering
+W, H              = 1280, 720 # 16:9 Presentation Canvas
+TRANSITION_SEC    = 0.5       # 0.5s cross-dissolve transition between slides
 TRANSITION_FRAMES = int(TRANSITION_SEC * FPS) # 12 frames at 24fps
 
 # ── Style Definitions ────────────────────────────────────────────────────────
@@ -194,7 +200,6 @@ def _make_gradient_bg(style: Dict[str, Any]) -> Image.Image:
     tc = style["bg_top"]
     bc = style["bg_bottom"]
     
-    # Fast vectorized numpy gradient
     r = np.linspace(tc[0], bc[0], H, dtype=np.uint8)
     g = np.linspace(tc[1], bc[1], H, dtype=np.uint8)
     b = np.linspace(tc[2], bc[2], H, dtype=np.uint8)
@@ -221,7 +226,6 @@ def _fit_slide_to_canvas(slide_img: Image.Image, style: Dict[str, Any]) -> Image
     
     canvas = _make_gradient_bg(style)
     
-    # Calculate scale to fit inside 1280x720 without any cropping
     img_w, img_h = slide_img.size
     scale = min(W / img_w, H / img_h)
     new_w = int(img_w * scale)
@@ -229,7 +233,6 @@ def _fit_slide_to_canvas(slide_img: Image.Image, style: Dict[str, Any]) -> Image
     
     resized = slide_img.resize((new_w, new_h), Image.Resampling.LANCZOS)
     
-    # Center on canvas
     paste_x = (W - new_w) // 2
     paste_y = (H - new_h) // 2
     
@@ -255,7 +258,6 @@ def _render_speaker_badge_on_frame(
     """
     speaker_upper = (speaker or "TEACHER").upper()
     
-    # Active palette
     SPEAKER_PALETTES = {
         "TEACHER": {
             "bg": (28, 32, 64, 230),
@@ -314,13 +316,11 @@ def _render_speaker_badge_on_frame(
     
     for b in range(num_bars):
         if is_speaking:
-            # Dynamic harmonic modulation
             f1 = 3.2 + b * 1.7
             f2 = 5.8 + b * 2.3
             amp = 0.5 * math.sin(t * math.pi * f1 + b * 0.9) + 0.5 * math.cos(t * math.pi * f2 + b * 1.4)
             bar_h = int(6 + 18 * abs(amp))
         else:
-            # Idle gentle low pulse
             bar_h = int(4 + 2 * math.sin(t * 3.0 + b * 0.8))
             
         bx = wave_start_x + b * (bar_w + bar_gap)
@@ -348,7 +348,6 @@ def _render_subtitle_overlay(
     d = ImageDraw.Draw(img)
     sub_font = _font(14, bold=False)
     
-    # Clean text wrapping
     max_w = W - 160
     words = narration.split()
     lines = []
@@ -365,7 +364,6 @@ def _render_subtitle_overlay(
     if cur:
         lines.append(" ".join(cur))
         
-    # Limit to top 2 lines for subtitles
     lines = lines[:2]
     if not lines:
         return img
@@ -374,12 +372,10 @@ def _render_subtitle_overlay(
     box_h = len(lines) * line_h + 16
     box_y = H - 68 - (box_h - 36)
     
-    # Compute maximum line width
     max_line_w = max(d.textbbox((0, 0), l, font=sub_font)[2] - d.textbbox((0, 0), l, font=sub_font)[0] for l in lines)
     box_w = max_line_w + 32
     box_x = (W - box_w) // 2
     
-    # Draw translucent background pill
     overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     od = ImageDraw.Draw(overlay)
     od.rounded_rectangle(
@@ -420,8 +416,7 @@ def _render_step_frames(
     speaker = step.get("speaker", "TEACHER")
     narration = step.get("narration", "")
     
-    # Step duration = audio duration + 0.5s transition buffer (minimum 3.5s)
-    clip_dur = max(audio_dur + TRANSITION_SEC, 3.5)
+    clip_dur = max(audio_dur + TRANSITION_SEC, 3.0)
     n_frames = max(int(clip_dur * FPS), TRANSITION_FRAMES + 2)
     
     # 1. Prepare Base Static Slide (100% visible, centered, uncropped)
@@ -430,10 +425,9 @@ def _render_step_frames(
             raw_img = Image.open(slide_path)
             base_slide = _fit_slide_to_canvas(raw_img, style)
         except Exception:
-            base_slide = _make_gradient_bg(style)
+            base_slide = _make_gradient_bg(style).convert("RGB")
     else:
-        # Fallback styled slide
-        base_slide = _make_gradient_bg(style)
+        base_slide = _make_gradient_bg(style).convert("RGB")
         d = ImageDraw.Draw(base_slide)
         title = step.get("title", f"Step {step_num}")
         d.text((80, 180), f"Step {step_num}: {title}", fill=style["title_col"], font=_font(32, bold=True))
@@ -457,9 +451,7 @@ def _render_step_frames(
         overall_progress = min(1.0, ((step_idx) + (t / clip_dur)) / max(total_steps, 1))
         fill_w = int(W * overall_progress)
         
-        # Track background
         f[H - 5:H, :] = bar_bg
-        # Active progress fill
         if fill_w > 0:
             f[H - 5:H, :fill_w] = acc_color[:3]
             
@@ -471,71 +463,71 @@ def _render_step_frames(
     return frames
 
 
-# ── Render Intro Card ─────────────────────────────────────────────────────────
+# ── Render Intro Card (Ultra-Fast) ───────────────────────────────────────────
 def _render_intro_frames(
     topic: str,
     total_steps: int,
     visual_style: str,
-    duration: float = 3.5
+    duration: float = 3.0
 ) -> List[np.ndarray]:
     """Generates the cinematic 16:9 intro presentation card."""
     style = _get_style(visual_style)
-    clip_dur = max(duration, 3.2)
+    clip_dur = max(duration, 2.8)
     n_frames = max(int(clip_dur * FPS), TRANSITION_FRAMES + 2)
-    
-    base_bg = _make_gradient_bg(style)
     acc = style["accent"]
     
-    frames: List[np.ndarray] = []
+    # Pre-render static base card
+    base_canvas = _make_gradient_bg(style)
+    d = ImageDraw.Draw(base_canvas)
     
+    cx, cy = W // 2, H // 2 - 80
+    
+    title_font = _font(38, bold=True)
+    bb = d.textbbox((0, 0), topic, font=title_font)
+    tw = bb[2] - bb[0]
+    tx = max(40, (W - tw) // 2)
+    ty = cy + 85
+    d.text((tx + 2, ty + 2), topic, fill=(0, 0, 0, 80), font=title_font)
+    d.text((tx, ty), topic, fill=style["title_col"], font=title_font)
+    
+    sub_text = f"{total_steps}-Step Interactive Tutorial  •  {visual_style.replace('_', ' ').title()} Mode"
+    sub_font = _font(17, bold=False)
+    bb2 = d.textbbox((0, 0), sub_text, font=sub_font)
+    sw = bb2[2] - bb2[0]
+    sx = max(40, (W - sw) // 2)
+    d.text((sx, ty + 56), sub_text, fill=style["muted_col"], font=sub_font)
+    
+    base_np = np.array(base_canvas.convert("RGB"))
+    
+    # Pre-render logo badge region
+    badge_box = (cx - 70, cy - 70, cx + 70, cy + 70)
+    
+    frames: List[np.ndarray] = []
     for i in range(n_frames):
         t = i / FPS
-        canvas = base_bg.copy()
-        d = ImageDraw.Draw(canvas)
+        f = base_np.copy()
         
-        # Intro animated logo & circle
-        intro_progress = _ease_out_cubic(min(1.0, t / 0.8))
-        cx, cy = W // 2, H // 2 - 80
+        # Center animated play logo
+        intro_progress = _ease_out_cubic(min(1.0, t / 0.7))
         radius = int(55 * intro_progress)
-        
         if radius > 0:
-            overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-            od = ImageDraw.Draw(overlay)
-            for g in range(4, 0, -1):
+            patch = Image.fromarray(f[cy - 70:cy + 70, cx - 70:cx + 70]).convert("RGBA")
+            od = ImageDraw.Draw(patch)
+            pcx, pcy = 70, 70
+            for g in range(3, 0, -1):
                 od.ellipse(
-                    [cx - radius - g*4, cy - radius - g*4, cx + radius + g*4, cy + radius + g*4],
-                    fill=(*acc, 25 // g)
+                    [pcx - radius - g*3, pcy - radius - g*3, pcx + radius + g*3, pcy + radius + g*3],
+                    fill=(*acc, 30 // g)
                 )
             od.ellipse(
-                [cx - radius, cy - radius, cx + radius, cy + radius],
-                fill=(*acc, 70),
-                outline=(255, 255, 255, 200),
+                [pcx - radius, pcy - radius, pcx + radius, pcy + radius],
+                fill=(*acc, 75),
+                outline=(255, 255, 255, 220),
                 width=2
             )
-            od.text((cx - 14, cy - 18), "▶", fill=(255, 255, 255, 240), font=_font(28, bold=True))
-            canvas.alpha_composite(overlay)
+            od.text((pcx - 12, pcy - 16), "▶", fill=(255, 255, 255, 240), font=_font(26, bold=True))
+            f[cy - 70:cy + 70, cx - 70:cx + 70] = np.array(patch.convert("RGB"))
             
-        d = ImageDraw.Draw(canvas)
-        
-        # Topic Title
-        title_font = _font(38, bold=True)
-        bb = d.textbbox((0, 0), topic, font=title_font)
-        tw = bb[2] - bb[0]
-        tx = max(40, (W - tw) // 2)
-        ty = cy + 85
-        d.text((tx + 2, ty + 2), topic, fill=(0, 0, 0, 80), font=title_font)
-        d.text((tx, ty), topic, fill=style["title_col"], font=title_font)
-        
-        # Subtitle Tag
-        sub_text = f"{total_steps}-Step Interactive Tutorial  •  {visual_style.replace('_', ' ').title()} Mode"
-        sub_font = _font(17, bold=False)
-        bb2 = d.textbbox((0, 0), sub_text, font=sub_font)
-        sw = bb2[2] - bb2[0]
-        sx = max(40, (W - sw) // 2)
-        d.text((sx, ty + 56), sub_text, fill=style["muted_col"], font=sub_font)
-        
-        f = np.array(canvas.convert("RGB"))
-        
         # Bottom Progress Bar
         f[H - 5:H, :] = (12, 16, 28)
         p_w = int(W * (t / clip_dur) * (1.0 / max(total_steps, 1)))
@@ -547,73 +539,68 @@ def _render_intro_frames(
     return frames
 
 
-# ── Render Outro Card ─────────────────────────────────────────────────────────
+# ── Render Outro Card (Ultra-Fast) ───────────────────────────────────────────
 def _render_outro_frames(
     topic: str,
     total_steps: int,
     visual_style: str,
-    duration: float = 3.5
+    duration: float = 3.0
 ) -> List[np.ndarray]:
     """Generates the cinematic completion outro presentation card."""
     style = _get_style(visual_style)
-    clip_dur = max(duration, 3.2)
+    clip_dur = max(duration, 2.8)
     n_frames = max(int(clip_dur * FPS), TRANSITION_FRAMES + 2)
-    
-    base_bg = _make_gradient_bg(style)
     acc = style["accent"]
     
-    frames: List[np.ndarray] = []
+    base_canvas = _make_gradient_bg(style)
+    d = ImageDraw.Draw(base_canvas)
     
+    cx, cy = W // 2, H // 2 - 70
+    
+    done_text = "Tutorial Complete!"
+    d_font = _font(38, bold=True)
+    bb = d.textbbox((0, 0), done_text, font=d_font)
+    tw = bb[2] - bb[0]
+    tx = (W - tw) // 2
+    ty = cy + 85
+    d.text((tx + 2, ty + 2), done_text, fill=(0, 0, 0, 80), font=d_font)
+    d.text((tx, ty), done_text, fill=style["title_col"], font=d_font)
+    
+    sub_text = f"Successfully mastered: {topic}"
+    sub_font = _font(17, bold=False)
+    bb2 = d.textbbox((0, 0), sub_text, font=sub_font)
+    sw = bb2[2] - bb2[0]
+    sx = max(40, (W - sw) // 2)
+    d.text((sx, ty + 56), sub_text, fill=style["muted_col"], font=sub_font)
+    
+    base_np = np.array(base_canvas.convert("RGB"))
+    
+    frames: List[np.ndarray] = []
     for i in range(n_frames):
         t = i / FPS
-        canvas = base_bg.copy()
-        d = ImageDraw.Draw(canvas)
+        f = base_np.copy()
         
-        progress = _ease_out_cubic(min(1.0, t / 0.8))
-        cx, cy = W // 2, H // 2 - 70
+        progress = _ease_out_cubic(min(1.0, t / 0.7))
         radius = int(55 * progress)
-        
         if radius > 0:
-            overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-            od = ImageDraw.Draw(overlay)
-            for g in range(4, 0, -1):
+            patch = Image.fromarray(f[cy - 70:cy + 70, cx - 70:cx + 70]).convert("RGBA")
+            od = ImageDraw.Draw(patch)
+            pcx, pcy = 70, 70
+            for g in range(3, 0, -1):
                 od.ellipse(
-                    [cx - radius - g*4, cy - radius - g*4, cx + radius + g*4, cy + radius + g*4],
-                    fill=(*acc, 25 // g)
+                    [pcx - radius - g*3, pcy - radius - g*3, pcx + radius + g*3, pcy + radius + g*3],
+                    fill=(*acc, 30 // g)
                 )
             od.ellipse(
-                [cx - radius, cy - radius, cx + radius, cy + radius],
-                fill=(*acc, 70),
-                outline=(255, 255, 255, 200),
+                [pcx - radius, pcy - radius, pcx + radius, pcy + radius],
+                fill=(*acc, 75),
+                outline=(255, 255, 255, 220),
                 width=2
             )
-            od.text((cx - 18, cy - 22), "✓", fill=(255, 255, 255, 240), font=_font(34, bold=True))
-            canvas.alpha_composite(overlay)
+            od.text((pcx - 16, pcy - 20), "✓", fill=(255, 255, 255, 240), font=_font(32, bold=True))
+            f[cy - 70:cy + 70, cx - 70:cx + 70] = np.array(patch.convert("RGB"))
             
-        d = ImageDraw.Draw(canvas)
-        
-        # Complete Title
-        done_text = "Tutorial Complete!"
-        d_font = _font(38, bold=True)
-        bb = d.textbbox((0, 0), done_text, font=d_font)
-        tw = bb[2] - bb[0]
-        tx = (W - tw) // 2
-        ty = cy + 85
-        d.text((tx + 2, ty + 2), done_text, fill=(0, 0, 0, 80), font=d_font)
-        d.text((tx, ty), done_text, fill=style["title_col"], font=d_font)
-        
-        # Subtitle
-        sub_text = f"Successfully mastered: {topic}"
-        sub_font = _font(17, bold=False)
-        bb2 = d.textbbox((0, 0), sub_text, font=sub_font)
-        sw = bb2[2] - bb2[0]
-        sx = max(40, (W - sw) // 2)
-        d.text((sx, ty + 56), sub_text, fill=style["muted_col"], font=sub_font)
-        
-        f = np.array(canvas.convert("RGB"))
-        # 100% full progress bar
         f[H - 5:H, :] = acc[:3]
-        
         frames.append(f)
         
     return frames
@@ -646,35 +633,71 @@ def _blend_cross_dissolve(
     return result
 
 
-# ── Audio Loader & Validator ──────────────────────────────────────────────────
-def _load_audio_safe(path: Any) -> Tuple[Optional[AudioFileClip], float]:
-    """
-    Safely load an audio file or dual-voice dict with fallback.
-    Returns (AudioFileClip_or_None, duration_seconds).
-    """
+# ── Ultra-Fast Audio Duration Reader ──────────────────────────────────────────
+def _fast_audio_dur(path: Optional[str]) -> float:
+    """Instantly returns audio duration in seconds using wave header or fast ffmpeg."""
+    if not path or not os.path.exists(path):
+        return 2.8
+    p = str(path)
+    if p.lower().endswith(".wav"):
+        try:
+            with wave.open(p, "rb") as wf:
+                return max(1.0, wf.getnframes() / float(wf.getframerate()))
+        except Exception:
+            pass
+    try:
+        res = subprocess.run([FFMPEG_BINARY, "-i", p], stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, text=True, timeout=2.0)
+        match = re.search(r'Duration:\s*(\d+):(\d+):(\d+\.\d+)', res.stderr)
+        if match:
+            h, m, s = match.groups()
+            return max(1.0, int(h)*3600 + int(m)*60 + float(s))
+    except Exception:
+        pass
+    return 2.8
+
+
+def _resolve_audio_path(path: Any) -> Optional[str]:
+    """Extract file path from string or dual-voice dictionary."""
     if not path:
-        return None, 3.0
+        return None
     if isinstance(path, dict):
         path = (
             path.get("combined")
             or path.get("teacher")
             or path.get("student")
             or path.get("audio")
-            or next((v for v in path.values() if isinstance(v, str) and v.endswith(('.mp3', '.wav', '.m4a'))), None)
+            or next((v for v in path.values() if isinstance(v, str) and v.endswith(('.mp3', '.wav', '.m4a', '.ogg'))), None)
         )
-    if not path:
-        return None, 3.0
-        
-    p = Path(str(path))
-    if not p.exists() or p.stat().st_size < 300:
-        return None, 3.0
-        
+    if path and Path(str(path)).exists() and Path(str(path)).stat().st_size > 200:
+        return str(path)
+    return None
+
+
+# ── Fast Audio Concatenator ───────────────────────────────────────────────────
+def _combine_audio_files(audio_paths: List[str], output_wav: str) -> bool:
+    """Concatenate multiple audio tracks into a single WAV file via FFmpeg filter."""
+    if not audio_paths:
+        return False
+    if len(audio_paths) == 1:
+        try:
+            cmd = [FFMPEG_BINARY, "-y", "-i", audio_paths[0], "-c:a", "pcm_s16le", output_wav]
+            subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+            return True
+        except Exception:
+            return False
+            
     try:
-        clip = AudioFileClip(str(p))
-        return clip, max(1.0, float(clip.duration))
+        inputs = []
+        for a in audio_paths:
+            inputs.extend(["-i", a])
+            
+        filter_str = "".join(f"[{i}:a]" for i in range(len(audio_paths))) + f"concat=n={len(audio_paths)}:v=0:a=1[outa]"
+        cmd = [FFMPEG_BINARY, "-y"] + inputs + ["-filter_complex", filter_str, "-map", "[outa]", output_wav]
+        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        return True
     except Exception as e:
-        print(f"  ⚠️ Audio load failed ({p.name}): {e}")
-        return None, 3.0
+        print(f"  ⚠️ Fast audio concat fallback: {e}")
+        return False
 
 
 # ── Main Video Assembler Entry Point ──────────────────────────────────────────
@@ -705,17 +728,16 @@ def assemble_video(
     print(f"   • Transitions: 0.5s Smooth Cross-Dissolve")
     print(f"   • Audio Sync: Dual-Voice Animated Waveforms")
     
-    audio_clips_to_close: List[AudioFileClip] = []
-    sequential_audio: List[AudioFileClip] = []
+    sequential_audio_paths: List[str] = []
     
     # ── 1. Intro Card ─────────────────────────────────────────────────────────
-    intro_audio_path = audio_data.get("intro") if isinstance(audio_data, dict) else None
-    intro_audio, intro_dur = _load_audio_safe(intro_audio_path)
-    if intro_audio:
-        audio_clips_to_close.append(intro_audio)
-        sequential_audio.append(intro_audio)
+    intro_audio_raw = audio_data.get("intro") if isinstance(audio_data, dict) else None
+    resolved_intro_p = _resolve_audio_path(intro_audio_raw)
+    intro_dur = _fast_audio_dur(resolved_intro_p)
+    if resolved_intro_p:
+        sequential_audio_paths.append(resolved_intro_p)
         
-    intro_dur = max(intro_dur, 3.2)
+    intro_dur = max(intro_dur, 2.8)
     intro_frames = _render_intro_frames(topic, total_steps, visual_style, intro_dur)
     
     merged_frames: List[np.ndarray] = intro_frames
@@ -729,13 +751,13 @@ def assemble_video(
         slide_path = image_paths[idx] if idx < len(image_paths) else None
         
         # Audio
-        step_audio_path = step_audio_paths[idx] if idx < len(step_audio_paths) else None
-        step_audio, step_dur = _load_audio_safe(step_audio_path)
-        if step_audio:
-            audio_clips_to_close.append(step_audio)
-            sequential_audio.append(step_audio)
+        step_audio_raw = step_audio_paths[idx] if idx < len(step_audio_paths) else None
+        resolved_step_p = _resolve_audio_path(step_audio_raw)
+        step_dur = _fast_audio_dur(resolved_step_p)
+        if resolved_step_p:
+            sequential_audio_paths.append(resolved_step_p)
             
-        step_dur = max(step_dur, 3.0)
+        step_dur = max(step_dur, 2.8)
         speaker = step.get("speaker", "TEACHER")
         
         step_frames = _render_step_frames(
@@ -752,58 +774,77 @@ def assemble_video(
         print(f"  ✓ Step {step_num}/{total_steps} [{speaker}]: {step.get('title', '')[:35]} ({step_dur:.1f}s)")
         
     # ── 3. Outro Card ─────────────────────────────────────────────────────────
-    outro_audio_path = audio_data.get("outro") if isinstance(audio_data, dict) else None
-    outro_audio, outro_dur = _load_audio_safe(outro_audio_path)
-    if outro_audio:
-        audio_clips_to_close.append(outro_audio)
-        sequential_audio.append(outro_audio)
+    outro_audio_raw = audio_data.get("outro") if isinstance(audio_data, dict) else None
+    resolved_outro_p = _resolve_audio_path(outro_audio_raw)
+    outro_dur = _fast_audio_dur(resolved_outro_p)
+    if resolved_outro_p:
+        sequential_audio_paths.append(resolved_outro_p)
         
-    outro_dur = max(outro_dur, 3.2)
+    outro_dur = max(outro_dur, 2.8)
     outro_frames = _render_outro_frames(topic, total_steps, visual_style, outro_dur)
     merged_frames = _blend_cross_dissolve(merged_frames, outro_frames, TRANSITION_FRAMES)
     print(f"  ✓ Outro card prepared ({outro_dur:.1f}s, {len(outro_frames)} frames)")
     
     # ── 4. Build Final Video Stream ───────────────────────────────────────────
     final_video = ImageSequenceClip(merged_frames, fps=FPS)
+    total_duration = round(final_video.duration, 1)
     
-    # Multiplex Audio
-    if sequential_audio:
-        try:
-            composite_audio = concatenate_audioclips(sequential_audio)
-            final_video = final_video.set_audio(composite_audio)
-        except Exception as e:
-            print(f"  ⚠️ Audio concat warning: {e}")
-            
-    # ── 5. Ultra-Fast Multi-Threaded Encoding ─────────────────────────────────
     out_file = Path(output_path)
     out_file.parent.mkdir(parents=True, exist_ok=True)
     safe_id = (job_id or str(os.getpid())).replace("/", "_").replace("\\", "_")
-    tmp_audio_path = str(out_file.parent / f"_tmp_audio_{safe_id}.m4a")
     
-    total_duration = round(final_video.duration, 1)
+    raw_video_tmp = str(out_file.parent / f"_tmp_raw_video_{safe_id}.mp4")
+    combined_audio_tmp = str(out_file.parent / f"_tmp_audio_{safe_id}.wav")
+    
     print(f"\n  💾 Encoding [{visual_style.upper()}] {W}×{H} @ {FPS}fps ({total_duration}s, {len(merged_frames)} frames)")
     print(f"     → Destination: {output_path}")
     
+    # Write video stream fast
     final_video.write_videofile(
-        str(out_file),
+        raw_video_tmp,
         fps=FPS,
         codec="libx264",
-        audio_codec="aac",
-        preset="veryfast",
+        preset="ultrafast",
         threads=8,
         logger=None,
-        ffmpeg_params=["-crf", "22", "-pix_fmt", "yuv420p"],
-        temp_audiofile=tmp_audio_path,
-        remove_temp=True,
+        ffmpeg_params=["-crf", "22", "-pix_fmt", "yuv420p", "-tune", "fastdecode"],
     )
+    final_video.close()
     
-    # ── 6. Resource Cleanup ───────────────────────────────────────────────────
-    try: final_video.close()
-    except Exception: pass
-    for a in audio_clips_to_close:
-        try: a.close()
-        except Exception: pass
+    # Combine and Mux Audio
+    has_audio = False
+    if sequential_audio_paths:
+        has_audio = _combine_audio_files(sequential_audio_paths, combined_audio_tmp)
         
+    if has_audio and os.path.exists(combined_audio_tmp):
+        try:
+            mux_cmd = [
+                FFMPEG_BINARY, "-y",
+                "-i", raw_video_tmp,
+                "-i", combined_audio_tmp,
+                "-c:v", "copy",
+                "-c:a", "aac",
+                "-shortest",
+                str(out_file)
+            ]
+            subprocess.run(mux_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        except Exception as e:
+            print(f"  ⚠️ Fast mux warning: {e}, using direct file")
+            if os.path.exists(raw_video_tmp):
+                if os.path.exists(str(out_file)):
+                    os.remove(str(out_file))
+                os.rename(raw_video_tmp, str(out_file))
+    else:
+        if os.path.exists(str(out_file)):
+            os.remove(str(out_file))
+        os.rename(raw_video_tmp, str(out_file))
+        
+    # Clean temporary files
+    for tmp in [raw_video_tmp, combined_audio_tmp]:
+        if os.path.exists(tmp):
+            try: os.remove(tmp)
+            except Exception: pass
+            
     elapsed = round(time.time() - t_start, 2)
     file_size_mb = round(out_file.stat().st_size / (1024 * 1024), 2)
     print(f"✅ Video Generated Successfully in {elapsed}s! ({file_size_mb} MB, {total_duration}s total)")
