@@ -513,9 +513,9 @@ def _draw_step_title_overlay(img: Image.Image, step: dict, style: dict,
 
 
 
-# ── Speaker Label ─────────────────────────────────────────────────────────────
+# ── Speaker Label with Omni-Style Waveform ─────────────────────────────────────
 def _draw_speaker_label(img: Image.Image, step: dict, style: dict, t: float) -> Image.Image:
-    """Show animated TEACHER / STUDENT label when dual-voice is used."""
+    """Show animated TEACHER / STUDENT label with dynamic Omni audio waveform bars."""
     speaker = step.get("speaker", "")
     if not speaker:
         return img
@@ -534,15 +534,25 @@ def _draw_speaker_label(img: Image.Image, step: dict, style: dict, t: float) -> 
     od = ImageDraw.Draw(overlay)
 
     sx, sy = SPLIT_X + 16, 18
-    sw, sh = 130, 30
+    sw, sh = 145, 32
     od.rounded_rectangle([(sx, sy), (sx + sw, sy + sh)],
-                          radius=15, fill=(*col, 35))
+                          radius=16, fill=(*col, 40))
     od.rounded_rectangle([(sx, sy), (sx + sw, sy + sh)],
-                          radius=15, outline=(*col, alpha), width=1)
+                          radius=16, outline=(*col, alpha), width=1)
 
-    mic = "🎤"
-    label = f"  {speaker_upper}"
-    od.text((sx + 10, sy + 6), label, fill=(*col, alpha), font=_font(11, bold=True))
+    label = f"{speaker_upper}"
+    od.text((sx + 12, sy + 7), label, fill=(*col, 240), font=_font(11, bold=True))
+
+    # Omni Dynamic Audio Waveform Bars
+    wave_x = sx + sw - 42
+    for bar_idx in range(4):
+        # Dynamic height based on sine wave frequency harmonics
+        freq = 3.0 + bar_idx * 1.5
+        phase = bar_idx * 0.8
+        bar_h = int(6 + 8 * abs(math.sin(t * math.pi * freq + phase)))
+        bx = wave_x + bar_idx * 7
+        by = sy + (sh - bar_h) // 2
+        od.rounded_rectangle([(bx, by), (bx + 3, by + bar_h)], radius=2, fill=(*col, 230))
 
     img.alpha_composite(overlay)
     return img

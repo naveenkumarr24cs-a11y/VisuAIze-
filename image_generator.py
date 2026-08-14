@@ -193,28 +193,33 @@ STYLE_PROMPT_SUFFIXES = {
     "heritage":   "classical oil painting, mahogany and gold, detailed Renaissance style, regal",
 }
 
-def _fetch_ai_image(prompt: str, style: str = "classic") -> Image.Image | None:
-    """Fetch a full 1280×720 AI image from Pollinations with style-specific prompt."""
+def _fetch_ai_image(prompt: str, style: str = "classic", arc_phase: str = "solution") -> Image.Image | None:
+    """Fetch high-definition AI image via Nano Banana Engine with intelligent fallbacks."""
+    try:
+        import nano_banana_engine
+        img = nano_banana_engine.generate_nano_banana_image(
+            step_title=prompt[:60],
+            visual_desc=prompt,
+            style_name=style,
+            arc_phase=arc_phase,
+            width=SPLIT_X,
+            height=H,
+            timeout=10
+        )
+        if img:
+            return img.convert("RGBA").resize((SPLIT_X, H), Image.LANCZOS)
+    except Exception as e:
+        print(f"[ImageGenerator/NanoBanana] Fallback: {e}")
+
+    # Fallback to direct Pollinations fetch
     suffix = STYLE_PROMPT_SUFFIXES.get(style, STYLE_PROMPT_SUFFIXES["classic"])
     full_prompt = f"{prompt}, {suffix}, no text, no watermark, photorealistic educational visual"
-
-    # Try sora engine first (has its own retry logic)
-    if SORA_AVAILABLE:
-        try:
-            step_mock = {"title": prompt, "motion_prompt": full_prompt}
-            img = sora_engine.generate_cinematic_visual(prompt, step_mock)
-            if img is not None:
-                return img.resize((SPLIT_X, H), Image.LANCZOS)
-        except Exception:
-            pass
-
-    # Direct Pollinations fetch with fast 3.5s timeout
     clean_p = urllib.parse.quote(full_prompt[:300])
     seed = random.randint(100, 99999)
     url = f"https://image.pollinations.ai/prompt/{clean_p}?width={SPLIT_X}&height={H}&model=turbo&nologo=true&seed={seed}"
 
     try:
-        r = requests.get(url, headers=HEADERS, timeout=3.5)
+        r = requests.get(url, headers=HEADERS, timeout=4.0)
         if r.status_code == 200 and len(r.content) > 4000:
             img = Image.open(BytesIO(r.content)).convert("RGBA")
             img = ImageEnhance.Contrast(img.convert("RGB")).enhance(1.08)

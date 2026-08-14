@@ -166,13 +166,13 @@ def _run_pipeline(job_id: str, question_or_spec: Any, provider: str, image_path:
              ", ".join(s["title"] for s in steps[:3]) + "...")
 
 
-        # Phase 2 – AI Visual Slides (Parallel)
-        push(2, 4, f"🎨 Generating {visual_style} style visual slides...",
-             f"Fetching AI images for {len(steps)} steps in parallel")
+        # Phase 2 – Nano Banana AI Visual Slides
+        push(2, 4, f"🍌 Rendering {visual_style.title()} visuals with Nano Banana Engine...",
+             f"Synthesizing high-fidelity scene imagery for {len(steps)} steps in parallel")
         from image_generator import generate_all_images
         image_paths = generate_all_images(steps, str(tmp_images), topic=question,
                                           visual_style=visual_style)
-        push(2, 4, "✅ All visual slides ready!",
+        push(2, 4, "✅ All Nano Banana visual slides ready!",
              f"{len(image_paths)} {visual_style} slides generated")
 
         # Phase 3 – Dual-Voice Narrations
@@ -184,9 +184,9 @@ def _run_pipeline(job_id: str, question_or_spec: Any, provider: str, image_path:
         push(3, 4, "✅ Voice narrations ready!", "All audio clips created")
 
 
-        # Phase 4 – Animated Video Assembly
-        push(4, 4, "🎬 Assembling animated tutorial video...",
-             f"Ken Burns · {visual_style} style · crossfade · H.264")
+        # Phase 4 – Omni Dynamic Video Assembly
+        push(4, 4, "🎬 Assembling Omni Dynamic Video...",
+             f"Ken Burns Motion · Audio Waveforms · {visual_style.title()} style · H.264")
         from video_assembler import assemble_video
         assemble_video(
             steps=steps, image_paths=image_paths,
