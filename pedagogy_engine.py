@@ -233,13 +233,13 @@ def _call_gemini_api(prompt: str, system_prompt: str) -> str:
     client = google_genai.Client(api_key=api_key)
     full_prompt = f"SYSTEM INSTRUCTIONS:\n{system_prompt}\n\nUSER PROMPT:\n{prompt}"
 
-    for model_name in ["gemini-2.0-flash", "gemini-1.5-flash"]:
+    for model_name in ["gemini-flash-latest", "gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-pro-latest", "gemini-2.0-flash"]:
         try:
             response = client.models.generate_content(
                 model=model_name,
                 contents=[full_prompt]
             )
-            if response.text:
+            if response and response.text:
                 return response.text
         except Exception:
             continue

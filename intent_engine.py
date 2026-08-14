@@ -258,7 +258,7 @@ def _classify_with_gemini(question: str, history: Optional[List[Dict[str, Any]]]
         client = genai.Client(api_key=api_key)
         prompt = _build_user_prompt(question, history)
         full = f"{INTENT_SYSTEM_PROMPT}\n\n{prompt}"
-        for model_name in ["gemini-2.0-flash", "gemini-1.5-flash"]:
+        for model_name in ["gemini-flash-latest", "gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-pro-latest", "gemini-2.0-flash"]:
             try:
                 resp = client.models.generate_content(model=model_name, contents=[full])
                 if resp and resp.text:

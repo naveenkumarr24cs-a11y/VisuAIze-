@@ -357,13 +357,7 @@ def _build_cinematic_frame(slide_img: np.ndarray, step: dict, style: dict,
     n = step.get("step_number", 1)
     pil_frame = _draw_progress_bar(pil_frame, n, total_steps, style, t, duration)
 
-    # ── Vignette on visual panel only ────────────────────────────────────────
-    if t > 0.3:
-        vig_strength = 0.38 if style["bg_top"][0] > 200 else 0.28  # lighter for light themes
-        vis_crop = pil_frame.crop((0, 0, SPLIT_X, H))
-        vis_crop = _apply_vignette(vis_crop, strength=vig_strength)
-        pil_frame.paste(vis_crop, (0, 0))
-
+    # ── Keep visual panel clear and bright (no dark circular vignette) ──
     return np.array(pil_frame.convert("RGB"))
 
 

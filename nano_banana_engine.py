@@ -111,19 +111,19 @@ def generate_procedural_scene(
     width: int = 1280,
     height: int = 720
 ) -> Image.Image:
-    """Creates a beautiful procedural 16:9 canvas with gradients and kinetic diagram geometry."""
+    """Creates a beautiful, structured 16:9 educational flowchart & diagram canvas."""
     img = Image.new("RGB", (width, height), (15, 18, 32))
     draw = ImageDraw.Draw(img)
     
-    # Render rich gradient background
+    # 1. Subtle background grid & gradient
     style_bg_colors = {
-        "classic": ((8, 12, 28), (22, 28, 56)),
-        "whiteboard": ((245, 247, 250), (230, 235, 245)),
-        "kawaii": ((255, 225, 245), (220, 205, 255)),
-        "watercolor": ((245, 240, 230), (225, 235, 245)),
-        "papercraft": ((235, 238, 245), (200, 210, 230)),
-        "retro": ((35, 25, 45), (65, 35, 60)),
-        "heritage": ((25, 20, 15), (55, 40, 30))
+        "classic": ((10, 14, 28), (18, 24, 48)),
+        "whiteboard": ((250, 252, 255), (238, 242, 250)),
+        "kawaii": ((255, 235, 248), (235, 220, 255)),
+        "watercolor": ((248, 244, 236), (232, 238, 246)),
+        "papercraft": ((240, 242, 248), (215, 225, 240)),
+        "retro": ((38, 28, 48), (68, 38, 62)),
+        "heritage": ((28, 22, 18), (58, 44, 32))
     }
     c_top, c_btm = style_bg_colors.get(style_name.lower(), style_bg_colors["classic"])
     
@@ -133,9 +133,15 @@ def generate_procedural_scene(
         g = int(c_top[1] + (c_btm[1] - c_top[1]) * ratio)
         b = int(c_top[2] + (c_btm[2] - c_top[2]) * ratio)
         draw.line([(0, y), (width, y)], fill=(r, g, b))
+
+    # Grid pattern
+    is_light = c_top[0] > 180
+    grid_col = (0, 0, 0, 15) if is_light else (255, 255, 255, 18)
+    for gx in range(0, width, 40):
+        draw.line([(gx, 0), (gx, height)], fill=grid_col[:3])
+    for gy in range(0, height, 40):
+        draw.line([(0, gy), (width, gy)], fill=grid_col[:3])
         
-    # Draw central glowing conceptual geometry
-    cx, cy = int(width * 0.32), height // 2
     accent_colors = {
         "problem": (239, 68, 68),
         "analogy": (245, 158, 11),
@@ -143,22 +149,45 @@ def generate_procedural_scene(
     }
     accent = accent_colors.get(arc_phase.lower(), (99, 102, 241))
     
-    # Outer orbital rings
-    for radius in [180, 140, 100, 60]:
-        bbox = [cx - radius, cy - radius, cx + radius, cy + radius]
-        draw.ellipse(bbox, outline=(*accent, 90), width=2)
-        
-    # Core glowing orb
-    core_r = 45
-    draw.ellipse([cx - core_r, cy - core_r, cx + core_r, cy + core_r], fill=accent)
+    # 2. Draw 3 Structured Educational Flowchart Nodes
+    node_w, node_h = 160, 90
+    center_y = height // 2
+    nodes = [
+        (int(width * 0.12), center_y - 120, "1. INPUT / CONCEPT", (120, 140, 180)),
+        (int(width * 0.12), center_y, "2. CORE PROCESS", accent),
+        (int(width * 0.12), center_y + 120, "3. KEY OUTCOME", (34, 197, 94))
+    ]
     
-    # Floating kinetic node dots
-    for i in range(8):
-        angle = (i / 8.0) * 2 * 3.14159
-        dist = 140
-        nx = int(cx + dist * math.cos(angle))
-        ny = int(cy + dist * math.sin(angle))
-        draw.ellipse([nx - 6, ny - 6, nx + 6, ny + 6], fill=(255, 255, 255))
-        draw.line([(cx, cy), (nx, ny)], fill=(*accent, 120), width=1)
+    for nx, ny, label, col in nodes:
+        # Node Card
+        draw.rounded_rectangle([(nx, ny), (nx + node_w, ny + node_h)], radius=12, fill=(24, 30, 52) if not is_light else (255, 255, 255), outline=col, width=2)
+        # Accent top bar
+        draw.rounded_rectangle([(nx, ny), (nx + node_w, ny + 24)], radius=8, fill=col)
+        # Card inner glow
+        draw.ellipse([nx + node_w - 20, ny + 6, nx + node_w - 8, ny + 18], fill=(255, 255, 255))
+        
+    # Connecting Arrows
+    for i in range(len(nodes) - 1):
+        x1 = nodes[i][0] + node_w // 2
+        y1 = nodes[i][1] + node_h
+        x2 = nodes[i+1][0] + node_w // 2
+        y2 = nodes[i+1][1]
+        draw.line([(x1, y1), (x2, y2)], fill=accent, width=3)
+        # Arrowhead
+        draw.polygon([(x2 - 6, y2 - 8), (x2 + 6, y2 - 8), (x2, y2)], fill=accent)
+        
+    # Large Central Conceptual Focal Diagram (right side of visual pane)
+    diag_cx = int(width * 0.38)
+    diag_cy = center_y
+    draw.rounded_rectangle([(diag_cx - 120, diag_cy - 140), (diag_cx + 120, diag_cy + 140)], radius=16, fill=(18, 24, 44) if not is_light else (255, 255, 255), outline=accent, width=2)
+    # Header
+    draw.rounded_rectangle([(diag_cx - 120, diag_cy - 140), (diag_cx + 120, diag_cy - 95)], radius=12, fill=accent)
+    
+    # Internal blueprint wires
+    for i in range(4):
+        wy = diag_cy - 60 + i * 45
+        draw.line([(diag_cx - 90, wy), (diag_cx + 90, wy)], fill=(*accent, 100), width=2)
+        draw.ellipse([diag_cx - 95, wy - 5, diag_cx - 85, wy + 5], fill=accent)
+        draw.ellipse([diag_cx + 85, wy - 5, diag_cx + 95, wy + 5], fill=(255, 255, 255))
         
     return img
